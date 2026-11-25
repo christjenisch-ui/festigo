@@ -1,0 +1,2055 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="FestiGo: festival map, lineup, friends and Momento for Brisa Fest 2027 in València.">
+<meta name="theme-color" content="#0F0D2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FestiGo">
+<title>FestiGo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700;800&display=swap">
+<style>
+/* Layout: one full-screen app column. On large screens it floats on a summer-poster ground with a striped sunset disc. */
+:root{
+  --bg:#FFC93C; --accent:#E8336D; --accent2:#FF7A3D;
+  --f-display:'Unbounded','Arial Black',system-ui,sans-serif;
+  --f-body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'DM Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  /* app: one fixed night palette, the festival runs after dark */
+  --a-bg:#0F0D2E; --a-s1:#1A1748; --a-s2:#262262; --a-ink:#FFF6E5; --a-dim:#A9A3D6;
+  --a-sun:#FFC53D; --a-coral:#FF5C8A; --a-sea:#2EC4B6; --a-sky:#5BB8FF; --a-leaf:#7BD389; --a-red:#FF6B57;
+  --a-line:rgba(255,246,229,.10);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#16133D; --accent:#FF5C8A; --accent2:#FFB03A } }
+:root[data-theme="dark"]{ --bg:#16133D; --accent:#FF5C8A; --accent2:#FFB03A }
+
+[hidden]{display:none!important}
+*{-webkit-tap-highlight-color:transparent}
+html,body{height:100%; margin:0}
+body{background:var(--a-bg); color:var(--a-ink); font-family:var(--f-body); font-size:14px; -webkit-font-smoothing:antialiased; overscroll-behavior:none}
+img{max-width:100%}
+button{font:inherit; color:inherit; cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--a-sun); outline-offset:2px}
+
+.shell{position:relative; height:100%; display:grid; place-items:center; overflow:hidden}
+.sun{display:none}
+.app{position:relative; width:100%; max-width:480px; height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+  background:var(--a-bg); color:var(--a-ink); padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); box-sizing:border-box}
+@media (min-width:640px) and (min-height:720px){
+  body{background:var(--bg)}
+  .sun{display:block; position:absolute; width:min(640px,90vw); aspect-ratio:1; border-radius:50%; background:linear-gradient(180deg,var(--accent2),var(--accent));
+    -webkit-mask-image:linear-gradient(180deg,#000 0 56%,transparent 56% 60%,#000 60% 67%,transparent 67% 72%,#000 72% 78%,transparent 78% 84%,#000 84% 89%,transparent 89%);
+            mask-image:linear-gradient(180deg,#000 0 56%,transparent 56% 60%,#000 60% 67%,transparent 67% 72%,#000 72% 78%,transparent 78% 84%,#000 84% 89%,transparent 89%)}
+  .app{height:min(880px, calc(100dvh - 48px)); border-radius:36px; box-shadow:0 0 0 2px #2C2962, 0 40px 90px -24px rgba(16,8,60,.6)}
+}
+
+/* header */
+.ah{flex:none; display:flex; align-items:flex-end; justify-content:space-between; gap:10px; padding:calc(var(--sat) + 14px) 18px 10px}
+.ah small{display:block; font-family:var(--f-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--a-dim)}
+.ah h2{margin:2px 0 0; font-family:var(--f-display); font-weight:700; font-size:24px; letter-spacing:-.02em}
+.me-btn{flex:none; width:40px; height:40px; border-radius:50%; border:2px solid var(--a-sun); background:var(--a-s2); color:var(--a-sun); font-weight:800; font-size:11px; display:grid; place-items:center; padding:0; position:relative}
+.me-btn.on{background:var(--a-sun); color:var(--a-bg)}
+.me-btn .gear{position:absolute; right:-4px; bottom:-4px; width:18px; height:18px; border-radius:50%; background:var(--a-bg); display:grid; place-items:center}
+.me-btn .gear svg{width:13px; height:13px; fill:none; stroke:var(--a-ink); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+
+.views{position:relative; flex:1; min-height:0}
+.view{position:absolute; inset:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.view::-webkit-scrollbar{display:none}
+
+.tabs{flex:none; display:grid; grid-template-columns:repeat(5,1fr); padding:6px 6px max(12px, var(--sab)); border-top:1px solid var(--a-line); background:var(--a-bg)}
+.tab{display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:0; padding:6px 0; font-size:10.5px; font-weight:700; color:var(--a-dim); position:relative; min-width:0}
+.tab span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+.tab svg{width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.tab.on{color:var(--a-sun)}
+.tab .dot{position:absolute; top:4px; right:calc(50% - 17px); width:9px; height:9px; border-radius:50%; background:var(--a-coral); border:2px solid var(--a-bg)}
+
+/* notification banner + toast */
+.notif{position:absolute; z-index:75; top:calc(var(--sat) + 10px); left:10px; right:10px; display:flex; gap:12px; align-items:center; text-align:left; padding:12px 14px; border-radius:22px; border:1px solid var(--a-line);
+  background:rgba(38,34,98,.96); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:var(--a-ink);
+  transform:translateY(-180%); transition:transform .45s cubic-bezier(.2,1.2,.4,1); box-shadow:0 18px 40px -12px rgba(0,0,0,.6)}
+.notif.show{transform:none}
+.notif .ic{flex:none; width:38px; height:38px; border-radius:11px; background:var(--a-sun); display:grid; place-items:center}
+.notif .ic svg{width:22px; height:22px; fill:none; stroke:var(--a-bg); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.notif b{display:block; font-size:13.5px}
+.notif span{font-size:12.5px; color:var(--a-dim)}
+.notif time{margin-left:auto; align-self:flex-start; font-size:11px; color:var(--a-dim)}
+.toast{position:absolute; z-index:90; left:50%; bottom:calc(var(--sab) + 92px); translate:-50% 0; max-width:calc(100% - 40px); width:max-content; box-sizing:border-box;
+  padding:10px 16px; border-radius:14px; background:var(--a-ink); color:var(--a-bg); font-weight:700; font-size:13px; line-height:1.35; text-align:center;
+  opacity:0; transform:translateY(10px); transition:opacity .2s, transform .2s; pointer-events:none}
+.toast.show{opacity:1; transform:none}
+
+/* shared bits */
+.pad{padding:0 14px 24px; display:grid; gap:12px}
+.card{padding:14px; border-radius:20px; background:var(--a-s1); display:grid; gap:12px}
+.row{display:flex; align-items:center; gap:12px; min-width:0}
+.row > div{min-width:0}
+.row > div.grow{flex:1}
+.row b{font-size:14px}
+.row small{display:block; color:var(--a-dim); font-size:12px; line-height:1.4}
+.row.link{background:none; border:0; padding:0; text-align:left; width:100%; text-decoration:none}
+.chev{margin-left:auto; flex:none; width:18px; height:18px; fill:none; stroke:var(--a-dim); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.gl{font-family:var(--f-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--a-dim); margin:4px 2px -4px; display:flex; justify-content:space-between; gap:8px}
+.gl button{border:0; background:none; padding:0; color:var(--a-sun); font:inherit; letter-spacing:inherit; text-transform:inherit}
+.sh-ic{flex:none; width:42px; height:42px; border-radius:13px; display:grid; place-items:center; background:var(--c); color:var(--k)}
+.sh-ic svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round}
+.sh-ic.sm{width:34px; height:34px; border-radius:11px}
+.sh-ic.sm svg{width:18px; height:18px}
+.acts{display:flex; gap:8px; margin-top:14px}
+.btn{flex:1; display:inline-flex; justify-content:center; align-items:center; gap:7px; border:0; border-radius:14px; padding:11px 12px; font-weight:800; font-size:13px; background:var(--a-s2); color:var(--a-ink); text-decoration:none; text-align:center; box-sizing:border-box}
+.btn.pri{background:var(--a-sun); color:var(--a-bg)}
+.btn.big{padding:15px 16px; font-size:15px; border-radius:16px}
+.btn:disabled{opacity:.5; cursor:default}
+.btn svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; flex:none}
+.pills{display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 0}
+.pill{display:inline-flex; align-items:center; gap:5px; padding:5px 9px; border-radius:999px; font-size:11.5px; font-weight:700; background:var(--a-s2); color:var(--a-ink)}
+.pill.good{background:rgba(123,211,137,.16); color:var(--a-leaf)}
+.pill.warn{background:rgba(255,197,61,.16); color:var(--a-sun)}
+.pill.bad{background:rgba(255,107,87,.16); color:var(--a-red)}
+.sw{margin-left:auto; flex:none; width:50px; height:30px; border-radius:999px; border:0; padding:3px; background:var(--a-s2); position:relative; transition:background .2s}
+.sw::after{content:""; display:block; width:24px; height:24px; border-radius:50%; background:var(--a-ink); transition:transform .2s}
+.sw[aria-checked="true"]{background:var(--a-leaf)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+.av{flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:12px; color:#0F0D2E; background:var(--c); position:relative}
+.av.sm{width:30px; height:30px; font-size:10px}
+.av.off{background:var(--a-s2); color:var(--a-dim); border:2px dashed var(--a-dim); box-sizing:border-box}
+.av .on{position:absolute; right:-1px; bottom:-1px; width:11px; height:11px; border-radius:50%; background:var(--a-leaf); border:2px solid var(--a-s1)}
+.live{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; letter-spacing:.08em; color:var(--a-coral)}
+.live::before{content:""; width:7px; height:7px; border-radius:50%; background:currentColor; animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+.empty{padding:28px 20px; text-align:center; color:var(--a-dim); font-size:13px; line-height:1.55}
+.empty b{display:block; color:var(--a-ink); font-family:var(--f-display); font-size:16px; margin-bottom:4px}
+.langs{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.langs button{display:flex; align-items:center; gap:10px; padding:12px; border-radius:14px; border:1.5px solid var(--a-line); background:none; font-weight:800; font-size:14px; text-align:left}
+.langs button.on{border-color:var(--a-sun); background:rgba(255,197,61,.12); color:var(--a-sun)}
+.lc{font-family:var(--f-mono); font-size:11px; font-weight:500; padding:3px 6px; border-radius:6px; background:var(--a-s2); color:var(--a-ink)}
+.hintx{color:var(--a-dim); font-size:12px; line-height:1.45}
+
+/* ---------- welcome ---------- */
+.ob{position:absolute; inset:0; z-index:85; overflow-y:auto; display:flex; flex-direction:column; gap:22px;
+  padding:calc(var(--sat) + 36px) 24px calc(var(--sab) + 24px); box-sizing:border-box;
+  background:radial-gradient(120% 60% at 80% 0%, rgba(232,51,109,.55), transparent 60%), radial-gradient(90% 50% at 0% 30%, rgba(255,122,61,.25), transparent 60%), var(--a-bg)}
+.ob .mark{display:flex; align-items:center; gap:12px; font-family:var(--f-display); font-weight:800; font-size:28px; letter-spacing:-.02em}
+.ob .mark svg{width:46px; height:46px}
+.ob h1{margin:0; font-family:var(--f-display); font-weight:700; font-size:32px; line-height:1.08; letter-spacing:-.03em; text-wrap:balance}
+.ob h1 em{font-style:normal; color:var(--a-sun)}
+.ob ul{list-style:none; margin:0; padding:0; display:grid; gap:12px}
+.ob li{display:flex; gap:12px; align-items:center; font-size:14px; line-height:1.4}
+.ob .fest{padding:14px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid var(--a-line); display:flex; gap:12px; align-items:center}
+.ob .fest b{display:block; font-family:var(--f-display); font-size:15px}
+.ob .fest small{color:var(--a-dim); font-size:12.5px}
+.ob .grow{flex:1}
+
+/* ---------- home ---------- */
+.home{display:grid; gap:14px; padding:2px 0 28px}
+.home > .sec{padding:0 14px; display:grid; gap:10px}
+.hero{position:relative; overflow:hidden; margin:0 14px; padding:18px 18px 16px; border-radius:26px; color:#FFF6E5;
+  background:linear-gradient(160deg,#FF8A3D 0%, #E8336D 52%, #6B2A9E 100%)}
+.hero::after{content:""; position:absolute; right:-70px; top:-60px; width:230px; aspect-ratio:1; border-radius:50%; background:linear-gradient(180deg,#FFD25A,#FF8A3D);
+  -webkit-mask-image:linear-gradient(180deg,#000 0 52%,transparent 52% 58%,#000 58% 66%,transparent 66% 72%,#000 72% 79%,transparent 79% 86%,#000 86%);
+          mask-image:linear-gradient(180deg,#000 0 52%,transparent 52% 58%,#000 58% 66%,transparent 66% 72%,#000 72% 79%,transparent 79% 86%,#000 86%); opacity:.9}
+.hero > *{position:relative; z-index:1}
+.hero .ey{font-family:var(--f-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.9}
+.hero h3{margin:6px 0 2px; font-family:var(--f-display); font-weight:800; font-size:30px; line-height:1; letter-spacing:-.03em}
+.hero .dt{font-weight:700; font-size:14px; opacity:.95}
+.count{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px}
+.count div{background:rgba(15,13,46,.32); border-radius:14px; padding:10px 6px; text-align:center}
+.count b{display:block; font-family:var(--f-display); font-weight:700; font-size:24px; font-variant-numeric:tabular-nums}
+.count span{font-size:11px; font-weight:700; opacity:.85}
+.hero .status{margin-top:16px; padding:12px; border-radius:16px; background:rgba(15,13,46,.32); display:grid; gap:6px; font-size:13px}
+.hero .status .live{color:#FFF6E5}
+.qgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.qt{display:flex; align-items:center; gap:10px; padding:12px; border-radius:18px; background:var(--a-s1); border:0; text-align:left; font-weight:800; font-size:13.5px; min-width:0}
+.qt span{min-width:0}
+.qt small{display:block; font-weight:600; font-size:11.5px; color:var(--a-dim)}
+.prow{display:grid; grid-template-columns:58px 1fr auto; gap:10px; align-items:center; padding:12px; border-radius:16px; background:var(--a-s1)}
+.prow .t{font-family:var(--f-mono); font-size:11.5px; line-height:1.35; color:var(--a-dim)}
+.prow .t b{display:block; color:var(--a-ink); font-weight:500; font-size:14px}
+.prow .n{min-width:0}
+.prow .n b{display:block; font-weight:800; font-size:14px}
+.prow .n span{font-size:12px; color:var(--a-dim)}
+.prow .n .stg{color:var(--c); font-weight:700}
+.prow .warn{display:block; margin-top:4px; color:var(--a-red); font-size:11.5px; font-weight:700}
+.prow button{border:0; background:none; padding:6px}
+.prow button svg{width:20px; height:20px; fill:var(--a-sun); stroke:var(--a-sun); stroke-width:2}
+.mcard{padding:14px; border-radius:20px; display:grid; gap:10px; background:var(--a-sun); color:var(--a-bg)}
+.mcard.calm{background:var(--a-s1); color:var(--a-ink)}
+.mcard .k{font-family:var(--f-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75}
+.mcard p{margin:0; font-size:13px; line-height:1.5}
+.mcard .btn.dark{background:var(--a-bg); color:var(--a-ink)}
+.fstrip{display:flex; align-items:center; gap:12px; padding:12px; border-radius:18px; background:var(--a-s1); border:0; width:100%; text-align:left}
+.fstrip .avs{display:flex}
+.fstrip .avs .av{margin-left:-8px; border:2px solid var(--a-s1)}
+.fstrip .avs .av:first-child{margin-left:0}
+.fstrip > div{min-width:0}
+
+/* ---------- map ---------- */
+.v-map{overflow:hidden}
+#map{display:block; width:100%; height:100%; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none}
+#map:active{cursor:grabbing}
+#map text{font-family:var(--f-body)}
+.zl{font-size:8px; font-weight:800; letter-spacing:.14em; fill:rgba(255,246,229,.38)}
+.sea-l{font-size:10px; font-style:italic; font-weight:600; letter-spacing:.06em; fill:rgba(140,200,255,.55)}
+.pin{cursor:pointer; transition:opacity .2s}
+.pin.dim,.person.dim{opacity:.18}
+.pl{font-size:8.5px; font-weight:800; letter-spacing:.08em; text-anchor:middle; fill:var(--a-ink); paint-order:stroke; stroke:var(--a-bg); stroke-width:3px}
+.q{font-size:7.5px; font-weight:800; text-anchor:middle; fill:#0F0D2E}
+.ring{fill:none; stroke:var(--a-ink); stroke-width:2}
+.person{cursor:pointer; transition:opacity .2s}
+.person .ini{font-size:8.5px; font-weight:800; text-anchor:middle; fill:#0F0D2E}
+.person .nm{font-size:8px; font-weight:700; text-anchor:middle; fill:var(--a-ink); paint-order:stroke; stroke:var(--a-bg); stroke-width:3px}
+.person.paused{opacity:.55}
+.pulse{transform-box:fill-box; transform-origin:center; animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{from{transform:scale(1); opacity:.55} to{transform:scale(3.2); opacity:0}}
+#route{fill:none; stroke:var(--a-sun); stroke-width:3.5; stroke-linecap:round; stroke-dasharray:1 7; animation:march 1s linear infinite}
+@keyframes march{to{stroke-dashoffset:-8}}
+.chips{position:absolute; top:8px; left:0; right:0; display:flex; gap:6px; overflow-x:auto; padding:0 12px; scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none; display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:7px 12px; font-size:12px; font-weight:700; border:1px solid var(--a-line); background:rgba(26,23,72,.9); color:var(--a-ink); backdrop-filter:blur(6px)}
+.chip i{width:8px; height:8px; border-radius:50%; background:var(--c)}
+.chip.on{background:var(--a-ink); color:var(--a-bg)}
+.mctl{position:absolute; right:12px; top:52px; display:flex; flex-direction:column; gap:8px}
+.mctl button{width:40px; height:40px; border-radius:12px; border:1px solid var(--a-line); background:rgba(26,23,72,.92); display:grid; place-items:center; padding:0}
+.mctl svg{width:18px; height:18px; fill:none; stroke:var(--a-ink); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.mctl button.ok{background:var(--a-leaf); border-color:var(--a-leaf)}
+.mctl button.ok svg{stroke:var(--a-bg)}
+.mctl button.busy svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.legend{position:absolute; left:12px; top:52px; display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:10px; background:rgba(26,23,72,.9); font-size:11px; font-weight:700; color:var(--a-dim); max-width:calc(100% - 90px)}
+.legend b{flex:none; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--a-dim)}
+.legend.live b{background:var(--a-leaf); box-shadow:0 0 0 0 rgba(123,211,137,.6); animation:livep 1.6s infinite}
+@keyframes livep{50%{box-shadow:0 0 0 5px rgba(123,211,137,0)}}
+.meet-bar{position:absolute; left:12px; right:12px; top:52px; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; background:var(--a-sun); color:var(--a-bg); font-weight:700; font-size:13px}
+.meet-bar button{margin-left:auto; border:0; border-radius:999px; padding:6px 10px; background:var(--a-bg); color:var(--a-ink); font-size:12px; font-weight:700}
+.sheet{position:absolute; left:8px; right:8px; bottom:8px; max-height:74%; overflow-y:auto; box-sizing:border-box; padding:8px 16px 16px; border-radius:24px; background:var(--a-s1); border:1px solid var(--a-line);
+  transform:translateY(calc(100% + 24px)); transition:transform .32s cubic-bezier(.2,.9,.3,1); box-shadow:0 -10px 40px -10px rgba(0,0,0,.5); scrollbar-width:none}
+.sheet.open{transform:none}
+.grab{width:38px; height:4px; border-radius:4px; background:var(--a-line); margin:0 auto 10px}
+.sh-h{display:flex; gap:12px; align-items:center}
+.sh-h > div{min-width:0}
+.sh-h h3{margin:0; font-family:var(--f-display); font-weight:700; font-size:17px; letter-spacing:-.01em}
+.sh-h small{color:var(--a-dim); font-size:12px}
+.x{margin-left:auto; flex:none; width:32px; height:32px; border-radius:50%; border:0; background:var(--a-s2); display:grid; place-items:center; padding:0}
+.x svg{width:14px; height:14px; stroke:var(--a-ink); stroke-width:2.4; stroke-linecap:round; fill:none}
+.sh-p{margin:12px 0 0; font-size:13px; line-height:1.5; color:var(--a-dim)}
+.menu{list-style:none; margin:12px 0 0; padding:0; display:grid; gap:6px}
+.menu li{display:flex; justify-content:space-between; gap:10px; font-size:13px; padding-bottom:6px; border-bottom:1px dashed var(--a-line)}
+.np{margin-top:12px; padding:12px; border-radius:14px; background:var(--a-s2); display:grid; gap:6px; font-size:13px}
+.np b{font-family:var(--f-display); font-weight:700; font-size:15px}
+.np .mono{font-family:var(--f-mono); font-size:12px; color:var(--a-dim)}
+.walk{margin-top:12px; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; background:rgba(255,197,61,.12); color:var(--a-sun); font-weight:700; font-size:13px}
+.walk span{font-family:var(--f-mono); font-weight:500}
+.prog{height:8px; margin-top:14px; border-radius:8px; background:var(--a-s2); overflow:hidden}
+.prog i{display:block; height:100%; border-radius:8px; background:var(--a-sky); transition:width .2s}
+
+/* ---------- lineup ---------- */
+.lu-top{position:sticky; top:0; z-index:5; background:var(--a-bg); padding:0 14px 8px; display:grid; gap:10px}
+.seg2{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.seg2 button{border:1px solid var(--a-line); background:var(--a-s1); border-radius:12px; padding:7px 4px; display:grid; gap:1px; text-align:center}
+.seg2 button b{font-family:var(--f-display); font-size:14px}
+.seg2 button > span{font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--a-dim)}
+.seg2 button.on{background:var(--a-ink); color:var(--a-bg); border-color:var(--a-ink)}
+.seg2 button.on > span{color:var(--a-bg); opacity:.7}
+.seg{display:flex; padding:3px; border-radius:12px; background:var(--a-s1)}
+.seg button{flex:1; border:0; background:none; border-radius:9px; padding:7px; font-size:12.5px; font-weight:700; color:var(--a-dim)}
+.seg button.on{background:var(--a-s2); color:var(--a-ink)}
+.seg em{font-style:normal; display:inline-block; min-width:16px; padding:0 4px; margin-left:4px; border-radius:8px; background:var(--a-sun); color:var(--a-bg); font-size:11px}
+.tt-head{display:grid; grid-template-columns:34px repeat(3,minmax(0,1fr)); gap:5px}
+.tt-head div{font-family:var(--f-display); font-weight:700; font-size:11px; text-align:center; padding:6px 0; border-radius:8px; color:var(--c); background:color-mix(in srgb, var(--c) 14%, transparent)}
+.live-strip{margin:2px 14px 10px; padding:10px 12px; border-radius:14px; background:var(--a-s1); display:grid; gap:6px; font-size:12.5px}
+.live-strip div{display:flex; gap:8px; align-items:baseline; min-width:0}
+.live-strip b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.live-strip span.st{margin-left:auto; flex:none; color:var(--a-dim); font-size:11.5px}
+.tt-body{position:relative; display:grid; grid-template-columns:34px repeat(3,minmax(0,1fr)); gap:5px; margin:0 14px 20px}
+.hr{position:absolute; left:0; right:0; border-top:1px solid var(--a-line); pointer-events:none}
+.hr span{position:absolute; top:-7px; left:0; font-family:var(--f-mono); font-size:10px; color:var(--a-dim); background:var(--a-bg); padding-right:3px}
+.col{position:relative; grid-row:1}
+.set{position:absolute; left:0; right:0; box-sizing:border-box; padding:6px 6px 5px; border-radius:10px; text-align:left; border:1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background:color-mix(in srgb, var(--c) 16%, var(--a-bg)); color:var(--a-ink); overflow:hidden; display:flex; flex-direction:column; gap:2px; transition:background .15s}
+.set .tm{font-family:var(--f-mono); font-size:9.5px; color:var(--a-dim); padding-right:14px; white-space:nowrap; overflow:hidden; text-overflow:clip}
+.set .an{font-weight:800; font-size:11.5px; line-height:1.2}
+.set .gn{font-size:10px; color:var(--a-dim)}
+.set .star{position:absolute; right:5px; top:5px; width:13px; height:13px; fill:none; stroke:var(--a-dim); stroke-width:2}
+.set.fav{background:var(--c); color:#0F0D2E; border-color:var(--c)}
+.set.fav .tm,.set.fav .gn{color:rgba(15,13,46,.7)}
+.set.fav .star{fill:#0F0D2E; stroke:#0F0D2E}
+.set.clash{outline:2px dashed var(--a-red); outline-offset:1px}
+.set .lv{font-size:9px; font-weight:800; letter-spacing:.08em; color:var(--a-coral)}
+.set.fav .lv{color:#0F0D2E}
+.set.past{opacity:.5}
+.nowline{position:absolute; left:30px; right:0; height:0; border-top:2px solid var(--a-sun); z-index:3; pointer-events:none}
+.nowline::before{content:attr(data-t); position:absolute; left:-32px; top:-9px; font-family:var(--f-mono); font-size:9.5px; font-weight:500; background:var(--a-sun); color:var(--a-bg); padding:1px 3px; border-radius:4px}
+.plan{padding:4px 14px 24px; display:grid; gap:8px}
+
+/* ---------- friends ---------- */
+.dur{display:flex; gap:6px}
+.dur button{flex:1; border:1px solid var(--a-line); background:none; border-radius:10px; padding:7px 4px; font-size:12px; font-weight:700; color:var(--a-dim)}
+.dur button.on{border-color:var(--a-leaf); color:var(--a-leaf); background:rgba(123,211,137,.1)}
+.dur button:disabled{opacity:.4; cursor:default}
+.frow{display:flex; align-items:center; gap:12px; padding:12px; border-radius:18px; background:var(--a-s1)}
+.frow > div{min-width:0; flex:1}
+.frow b{font-size:14px}
+.frow small{display:block; color:var(--a-dim); font-size:12px; line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.frow .m{font-family:var(--f-mono); font-size:11.5px; color:var(--a-ink)}
+.ib{flex:none; width:38px; height:38px; border-radius:12px; border:0; background:var(--a-s2); display:grid; place-items:center; padding:0}
+.ib svg{width:17px; height:17px; fill:none; stroke:var(--a-ink); stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round}
+.meetc{background:linear-gradient(135deg, rgba(255,197,61,.18), rgba(255,92,138,.14)); border:1px solid rgba(255,197,61,.3)}
+.code{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; border:1px dashed var(--a-line)}
+.code span{font-family:var(--f-mono); font-size:12.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.code button{margin-left:auto; flex:none; border:0; border-radius:10px; padding:8px 12px; background:var(--a-sun); color:var(--a-bg); font-size:12px; font-weight:800}
+
+/* ---------- momento ---------- */
+.mbanner{margin:0 14px 14px; padding:16px; border-radius:22px; background:var(--a-sun); color:var(--a-bg); display:grid; gap:10px}
+.mbanner.idle,.mbanner.done{background:var(--a-s1); color:var(--a-ink)}
+.mbanner.done{border:1px solid rgba(123,211,137,.35)}
+.mbanner .k{font-family:var(--f-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75}
+.mbanner .big{font-family:var(--f-display); font-weight:800; font-size:38px; letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums}
+.mbanner p{margin:0; font-size:13px; line-height:1.5}
+.mbanner .btn.dark{background:var(--a-bg); color:var(--a-ink)}
+.feed{padding:0 14px 24px; display:grid; gap:16px}
+.fh{font-family:var(--f-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--a-dim); display:flex; justify-content:space-between}
+.post{display:grid; gap:8px}
+.post header{display:flex; align-items:center; gap:10px}
+.post header > div{min-width:0}
+.post header b{font-size:13.5px}
+.post header small{display:block; font-size:11.5px; color:var(--a-dim)}
+.post header .late{margin-left:auto; flex:none; font-size:11px; font-weight:700; color:var(--a-red)}
+.post header .ontime{margin-left:auto; flex:none; font-size:11px; font-weight:700; color:var(--a-leaf)}
+.dual{position:relative; aspect-ratio:3/4; max-width:100%; border-radius:18px; overflow:hidden; background:var(--a-s1)}
+.dual .b{display:block; width:100%; height:100%; object-fit:cover}
+.dual .f{position:absolute; top:10px; left:10px; width:31%; aspect-ratio:3/4; object-fit:cover; border-radius:12px; border:2px solid var(--a-bg); cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.lockd .dual img{filter:blur(18px) saturate(1.3); transform:scale(1.08)}
+.lockd .dual .f{display:none}
+.lockd .dual::after{content:attr(data-lock); position:absolute; inset:0; display:grid; place-items:center; padding:20px; text-align:center; font-weight:800; font-size:13px; color:var(--a-ink); background:rgba(15,13,46,.25)}
+.lockd .cap,.lockd .rx{filter:blur(4px); pointer-events:none}
+.cap{margin:0; font-size:13px; line-height:1.45}
+.rx{display:flex; gap:6px; flex-wrap:wrap}
+.rx button{border:1px solid var(--a-line); background:var(--a-s1); border-radius:999px; padding:4px 10px; font-size:12.5px; font-weight:700; display:inline-flex; gap:5px; align-items:center}
+.rx button.mine{border-color:var(--a-sun); background:rgba(255,197,61,.14)}
+
+/* camera */
+.cam{position:absolute; inset:0; z-index:80; background:#000; display:flex; flex-direction:column; padding-top:calc(var(--sat) + 8px)}
+.cam-top{display:flex; align-items:center; justify-content:space-between; padding:6px 16px 12px}
+.cam-top .x{margin:0; background:rgba(255,255,255,.14)}
+.cam-top .tm{font-family:var(--f-display); font-weight:800; font-size:20px; font-variant-numeric:tabular-nums}
+.cam-top .tm.late{color:var(--a-red)}
+.cam-top .lbl{font-family:var(--f-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--a-dim); min-width:32px; text-align:right}
+.cam-view{position:relative; margin:0 12px; border-radius:24px; overflow:hidden; aspect-ratio:3/4; max-width:100%; background:#111}
+#camVideo{display:block; width:100%; height:100%; object-fit:cover; background:#111}
+#camVideo.mirror{transform:scaleX(-1)}
+.cam-thumb{position:absolute; top:12px; left:12px; width:30%; aspect-ratio:3/4; border-radius:14px; border:2px solid #000; object-fit:cover}
+.flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none}
+.flash.go{animation:flash .45s ease-out}
+@keyframes flash{0%{opacity:.95} 100%{opacity:0}}
+.cam-msg{position:absolute; left:50%; bottom:14px; translate:-50% 0; max-width:calc(100% - 28px); box-sizing:border-box; padding:7px 12px; border-radius:999px; background:rgba(0,0,0,.6); font-size:12.5px; font-weight:700; text-align:center}
+.count3{position:absolute; inset:0; display:grid; place-items:center; font-family:var(--f-display); font-weight:800; font-size:96px; color:#fff; text-shadow:0 4px 30px rgba(0,0,0,.6); pointer-events:none}
+.cam-err{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; background:#14122F; font-size:13.5px; line-height:1.5; color:var(--a-ink)}
+.cam-err svg{width:40px; height:40px; fill:none; stroke:var(--a-dim); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.cam-err .btn{flex:none; width:100%; max-width:260px}
+.cam-ctrl{margin-top:auto; display:flex; align-items:center; justify-content:space-around; padding:14px 20px calc(var(--sab) + 22px)}
+.cam-ctrl label,.cam-ctrl .fl{width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.14); display:grid; place-items:center; cursor:pointer; border:0; padding:0; position:relative}
+.cam-ctrl svg{width:21px; height:21px; fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.vh{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; overflow:hidden}
+.shutter{width:78px; height:78px; border-radius:50%; border:5px solid #fff; background:transparent; padding:5px; display:grid; place-items:center}
+.shutter::after{content:""; width:100%; height:100%; border-radius:50%; background:#fff; transition:transform .1s}
+.shutter:active::after{transform:scale(.9)}
+.shutter:disabled{opacity:.4}
+.review{display:flex; flex-direction:column; gap:12px; padding:0 12px calc(var(--sab) + 22px); flex:1; min-height:0; overflow-y:auto}
+.review .dual{flex:none}
+.review input{width:100%; box-sizing:border-box; border-radius:14px; border:1px solid var(--a-line); background:var(--a-s1); color:var(--a-ink); padding:12px 14px; font:inherit; font-size:16px}
+.review input::placeholder{color:var(--a-dim)}
+.review .where{font-size:12.5px; color:var(--a-dim); display:flex; gap:6px; align-items:center}
+.review .where svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2}
+.about{text-align:center; color:var(--a-dim); font-size:12px; margin:4px 0 0; line-height:1.5}
+
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important; transition:none!important} }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sun" aria-hidden="true"></div>
+  <div class="app" id="app">
+
+    <button class="notif" id="notif" type="button" aria-live="polite">
+      <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+      <span><b data-i18n="notif.t">It's time for Momento</b><span data-i18n="notif.s">2 minutes to capture what you're seeing.</span></span>
+      <time data-i18n="notif.now">now</time>
+    </button>
+
+    <header class="ah">
+      <div><small id="vsub">Brisa Fest 2027</small><h2 id="vtitle">FestiGo</h2></div>
+      <button class="me-btn" id="meBtn" data-i18n-aria="settings" aria-label="Settings">TÚ<span class="gear" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></span></button>
+    </header>
+
+    <main class="views">
+      <section class="view" data-view="home"><div class="home" id="homePad"></div></section>
+
+      <section class="view v-map" data-view="map" hidden>
+        <svg id="map" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" data-i18n-aria="map.aria" aria-label="Festival map"></svg>
+        <div class="chips" id="chips"></div>
+        <div class="legend" id="legend"><b></b><span></span></div>
+        <div class="meet-bar" id="meetBar" hidden><span data-i18n="meet.bar">Tap the map to drop a meeting point</span><button id="meetCancel" data-i18n="cancel">Cancel</button></div>
+        <div class="mctl">
+          <button id="zin" data-i18n-aria="zin" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button id="zout" data-i18n-aria="zout" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <button id="zme" data-i18n-aria="zme" aria-label="Show my location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+          <button id="zoff" data-i18n-aria="off.title" data-i18n-title="off.title" aria-label="Offline map" title="Offline map"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
+        </div>
+        <div class="sheet" id="sheet" aria-live="polite"></div>
+      </section>
+
+      <section class="view" data-view="lineup" hidden>
+        <div class="lu-top">
+          <div class="seg2" id="days">
+            <button data-day="fri"><span data-i18n="day.fri">Fri</span><b>9 <span data-i18n="mon">Jul</span></b></button>
+            <button data-day="sat"><span data-i18n="day.sat">Sat</span><b>10 <span data-i18n="mon">Jul</span></b></button>
+            <button data-day="sun"><span data-i18n="day.sun">Sun</span><b>11 <span data-i18n="mon">Jul</span></b></button>
+          </div>
+          <div class="seg" id="mode"><button data-mode="grid" class="on" data-i18n="mode.grid">All sets</button><button data-mode="plan"><span data-i18n="mode.plan">My plan</span><em id="planN">0</em></button></div>
+          <div class="tt-head" id="ttHead"></div>
+        </div>
+        <div id="ttWrap"></div>
+      </section>
+
+      <section class="view" data-view="friends" hidden><div class="pad" id="friendsPad"></div></section>
+
+      <section class="view" data-view="momento" hidden>
+        <div id="mBanner"></div>
+        <div class="feed" id="feed"></div>
+      </section>
+
+      <section class="view" data-view="settings" hidden><div class="pad" id="settingsPad"></div></section>
+    </main>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab on" data-go="home"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7M5 10v10h5v-6h4v6h5V10"/></svg><span data-i18n="tab.home">Home</span></button>
+      <button class="tab" data-go="map"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg><span data-i18n="tab.map">Map</span></button>
+      <button class="tab" data-go="lineup"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span data-i18n="tab.lineup">Lineup</span></button>
+      <button class="tab" data-go="friends"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14a5 5 0 0 1 5 5"/></svg><span data-i18n="tab.friends">Friends</span></button>
+      <button class="tab" data-go="momento"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Momento</span><i class="dot" id="mDot" hidden></i></button>
+    </nav>
+
+    <!-- camera -->
+    <div class="cam" id="cam" hidden>
+      <div class="cam-top">
+        <button class="x" id="camClose" data-i18n-aria="cam.close" aria-label="Close camera"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <span class="tm" id="camTimer">02:00</span>
+        <span class="lbl" id="camStep">1/2</span>
+      </div>
+      <div id="camShoot" style="display:flex; flex-direction:column; flex:1; min-height:0">
+        <div class="cam-view">
+          <video id="camVideo" playsinline muted autoplay></video>
+          <img class="cam-thumb" id="camThumb" alt="" hidden>
+          <div class="flash" id="flash"></div>
+          <div class="count3" id="count3" hidden></div>
+          <div class="cam-msg" id="camMsg"></div>
+          <div class="cam-err" id="camErr" hidden>
+            <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/><path d="M3 3l18 18"/></svg>
+            <span id="camErrMsg"></span>
+            <label class="btn pri" id="nativeBtn"><input class="vh" type="file" id="fileNative" accept="image/*" capture="environment"><span id="nativeLbl"></span></label>
+            <button class="btn" id="camRetry" data-i18n="cam.retry">Try the camera again</button>
+          </div>
+        </div>
+        <div class="cam-ctrl">
+          <label data-i18n-title="cam.upload" data-i18n-aria="cam.upload" title="Use a photo from your library" aria-label="Use a photo from your library"><input class="vh" type="file" id="fileGallery" accept="image/*"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></label>
+          <button class="shutter" id="shutter" data-i18n-aria="cam.shutter" aria-label="Take photo"></button>
+          <button class="fl" id="camFlip" data-i18n-aria="cam.flip" aria-label="Switch camera"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg></button>
+        </div>
+      </div>
+      <div class="review" id="review" hidden>
+        <div class="dual"><img class="b" id="rvBack" alt=""><img class="f" id="rvFront" alt=""></div>
+        <div class="where" id="rvWhereRow"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="rvWhere"></span></div>
+        <input id="rvCap" maxlength="80" data-i18n-ph="rv.cap" placeholder="Add a caption (optional)" enterkeyhint="done">
+        <div class="acts" style="margin-top:0"><button class="btn" id="rvRetake" data-i18n="rv.retake">Retake</button><button class="btn pri" id="rvPost" data-i18n="rv.post">Post Momento</button></div>
+      </div>
+    </div>
+
+    <!-- welcome (first launch) -->
+    <div class="ob" id="ob" hidden></div>
+
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+/* true only in the copy shared on claude.ai, where the page cannot open the live camera, GPS or offline cache */
+const EMBED = false;
+const SHARE_URL = 'https://claude.ai/artifact/2DJnU56WJmGtE5ab6a6wJF';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pad = n => String(n).padStart(2, '0');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- storage (everything stays on this device) ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('festigo.' + k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem('festigo.' + k, JSON.stringify(v)); return true; } catch (_) { return false; } },
+};
+const S = Object.assign({ lang: (navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en', momAlerts: true, reminders: true }, store.get('settings', {}));
+if (S.lang !== 'en' && S.lang !== 'es') S.lang = 'en';
+const saveS = () => store.set('settings', S);
+
+/* ---------- strings: [English, Español] ---------- */
+const STR = {
+  'settings': ['Settings', 'Ajustes'],
+  'notif.t': ["It's time for Momento", '¡Es la hora del Momento!'],
+  'notif.s': ["2 minutes to capture what you're seeing.", 'Tienes 2 minutos para capturar lo que ves.'],
+  'notif.now': ['now', 'ahora'],
+  'map.aria': ['Festival map', 'Mapa del festival'],
+  'legend.live': ['Live queues', 'Colas en directo'], 'legend.typ': ['Usual queue times', 'Colas habituales'],
+  'legend.off': [' · Offline ready', ' · Mapa guardado'],
+  'meet.bar': ['Tap the map to drop a meeting point', 'Toca el mapa para marcar el punto de encuentro'],
+  'cancel': ['Cancel', 'Cancelar'],
+  'zin': ['Zoom in', 'Acercar'], 'zout': ['Zoom out', 'Alejar'], 'zme': ['Show my location', 'Mostrar mi ubicación'],
+  'day.fri': ['Fri', 'Vie'], 'day.sat': ['Sat', 'Sáb'], 'day.sun': ['Sun', 'Dom'], 'mon': ['Jul', 'jul'],
+  'dayfull.fri': ['Fri 9 Jul', 'el viernes 9'], 'dayfull.sat': ['Sat 10 Jul', 'el sábado 10'], 'dayfull.sun': ['Sun 11 Jul', 'el domingo 11'],
+  'mode.grid': ['All sets', 'Todo el cartel'], 'mode.plan': ['My plan', 'Mi plan'],
+  'tab.home': ['Home', 'Inicio'], 'tab.map': ['Map', 'Mapa'], 'tab.lineup': ['Lineup', 'Cartel'], 'tab.friends': ['Friends', 'Amigos'],
+
+  'v.home.s': ['Brisa Fest 2027 · València', 'Brisa Fest 2027 · València'],
+  'v.map': ['Map', 'Mapa'], 'v.map.s': ['Brisa Fest · Marina Sur', 'Brisa Fest · Marina Sur'],
+  'v.lineup': ['Lineup', 'Cartel'], 'v.lineup.s': ['Brisa Fest · 3 stages', 'Brisa Fest · 3 escenarios'],
+  'v.friends': ['Friends', 'Amigos'],
+  'v.momento.s': ['Once a day, at a surprise time', 'Una vez al día, a una hora sorpresa'],
+  'v.settings.s': ['FestiGo · version 1.0', 'FestiGo · versión 1.0'],
+
+  /* welcome */
+  'ob.h': ['Your festival, mapped. <em>Your people, found.</em>', 'Tu festival, en el mapa. <em>Tu gente, siempre cerca.</em>'],
+  'ob.f1': ['Food, restrooms, water and stages on one live map', 'Comida, aseos, agua y escenarios en un mapa en directo'],
+  'ob.f2': ['Every set time, with clash warnings for your plan', 'Todos los horarios, con avisos si tus conciertos coinciden'],
+  'ob.f3': ['Share your location with friends and set a meeting point', 'Comparte tu ubicación con tus amigos y fija un punto de encuentro'],
+  'ob.f4': ['Momento: once a day, post what you see with both cameras', 'Momento: una vez al día, publica lo que ves con las dos cámaras'],
+  'ob.lang': ['Language', 'Idioma'], 'ob.go': ['Get started', 'Empezar'],
+  'ob.fest': ['Brisa Fest 2027', 'Brisa Fest 2027'], 'ob.fest.s': ['Marina Sur, València · 9–11 July', 'Marina Sur, València · 9–11 de julio'],
+
+  /* home */
+  'h.ey': ['Brisa Fest 2027', 'Brisa Fest 2027'], 'h.place': ['Marina Sur · València', 'Marina Sur · València'], 'h.dates': ['9–11 July 2027', '9–11 de julio de 2027'],
+  'h.days': ['days', 'días'], 'h.hrs': ['hours', 'horas'], 'h.min': ['min', 'min'],
+  'h.starts': ['Gates open Friday 9 July at 18:00', 'Las puertas abren el viernes 9 de julio a las 18:00'],
+  'h.livenow': ['ON STAGE NOW', 'AHORA EN EL ESCENARIO'], 'h.doors': ['Doors open at 18:00. First set at {x}.', 'Puertas a las 18:00. Primer concierto a las {x}.'],
+  'h.between': ['Between sets. Next up: {n} at {x}.', 'Entre conciertos. Siguiente: {n} a las {x}.'],
+  'h.over': ['Brisa Fest 2027 is over. Thanks for coming!', 'Brisa Fest 2027 ha terminado. ¡Gracias por venir!'],
+  'h.daylabel': ['Festival day {n} of 3', 'Día {n} de 3 del festival'],
+  'q.food': ['Food & drink', 'Comida y bebida'], 'q.food.s': ['{n} stalls', '{n} puestos'],
+  'q.wc': ['Restrooms', 'Aseos'], 'q.wc.s': ['Shortest: {x}', 'Menos cola: {x}'],
+  'q.water': ['Free water', 'Agua gratis'], 'q.water.s': ['{n} refill points', '{n} fuentes'],
+  'q.aid': ['First aid', 'Primeros auxilios'], 'q.aid.s': ['Open all night', 'Abierto toda la noche'],
+  'h.plan': ['Your plan', 'Tu plan'], 'h.seeall': ['See all', 'Ver todo'],
+  'h.plan.empty': ['Star artists in the lineup and they show up here.', 'Marca artistas en el cartel y aparecerán aquí.'],
+  'h.lineup': ['Open the lineup', 'Abrir el cartel'],
+  'h.friends': ['{a} of {b} friends sharing location', '{a} de {b} amigos comparten ubicación'],
+  'h.getthere': ['Getting there', 'Cómo llegar'], 'h.addr': ['Marina Sur, 46024 València', 'Marina Sur, 46024 València'],
+  'h.dir': ['Directions', 'Cómo llegar'], 'h.far': ['How far am I?', '¿A qué distancia estoy?'],
+  'h.km': ["You're {km} km from Brisa Fest", 'Estás a {km} km de Brisa Fest'], 'h.onsite': ["You're at Brisa Fest. Enjoy!", 'Estás en Brisa Fest. ¡Disfruta!'],
+  'h.transit': ['Metro: Marítim (L5, L7) · Bus 19, 95. Free bike parking at Acceso Norte.', 'Metro: Marítim (L5, L7) · Bus 19, 95. Aparcabicis gratis en Acceso Norte.'],
+
+  /* map */
+  'chip.all': ['All', 'Todo'], 'chip.food': ['Food & drink', 'Comida y bebida'], 'chip.wc': ['Restrooms', 'Aseos'],
+  'chip.stage': ['Stages', 'Escenarios'], 'chip.water': ['Water & aid', 'Agua y ayuda'], 'chip.friends': ['Friends', 'Amigos'],
+  'type.stage': ['Stage', 'Escenario'], 'type.food': ['Food', 'Comida'], 'type.bar': ['Bar', 'Bar'], 'type.wc': ['Restrooms', 'Aseos'],
+  'type.water': ['Free water', 'Agua gratis'], 'type.aid': ['First aid', 'Primeros auxilios'], 'type.service': ['Service', 'Servicio'],
+  'away': ['{t} · {m} m away', '{t} · a {m} m'], 'fromgate': ['{t} · {m} m from the entrance', '{t} · a {m} m de la entrada'],
+  'livenow': ['LIVE NOW', 'EN DIRECTO'], 'fromto': ['{a} to {b}', 'de {a} a {b}'],
+  'changeover': ['Changeover', 'Cambio de escenario'], 'next': ['Next · {a} {n}', 'Siguiente · {a} {n}'], 'firstset': ['First set · {d} {a} {n}', 'Primer concierto · {d} {a} {n}'],
+  'queue': ['Queue ~{w} min', 'Cola ~{w} min'], 'until.c': ['Until {x}', 'Hasta las {x}'], 'until.l': ['until {x}', 'hasta las {x}'],
+  'cashless': ['Cashless', 'Pago con pulsera'],
+  'cabins': ['{n} cabins', '{n} cabinas'], 'acc': ['Accessible cabin', 'Cabina accesible'], 'noacc': ['No accessible cabin', 'Sin cabina accesible'],
+  'shorter': ['{x} usually has a shorter queue.', '{x} suele tener menos cola.'],
+  'restocked': ['Cleaned every hour while the festival is open.', 'Se limpian cada hora mientras el festival está abierto.'],
+  'route.on': ['Route on the map', 'Ruta en el mapa'], 'walkm': ['{m} m · {w} min walk', '{m} m · {w} min a pie'],
+  'route.gate': ['Route from the entrance', 'Ruta desde la entrada'],
+  'take': ['Take me there', 'Llévame'], 'lineupBtn': ['Lineup', 'Cartel'], 'sendgroup': ['Send to group', 'Enviar al grupo'],
+  'you.here': ['You are here', 'Estás aquí'],
+  'you.share': ['Your group can see you until {x}.', 'Tu grupo puede verte hasta {x}.'],
+  'you.off': ['Location sharing is off. Your group sees your last position only.', 'No estás compartiendo tu ubicación. Tu grupo solo ve tu última posición.'],
+  'share.settings': ['Sharing settings', 'Ajustes de ubicación'],
+  'upd': ['{s} · updated {n} min ago', '{s} · hace {n} min'],
+  'paused.last': ['Location paused · last seen {x}', 'Ubicación en pausa · visto a las {x}'],
+  'maway': ['{m} m away', 'A {m} m'], 'mgate': ['{m} m from entrance', 'A {m} m de la entrada'], 'minwalk': ['{w} min walk', '{w} min a pie'],
+  'near': ['Near {x}', 'Cerca de {x}'],
+  'walkto': ['Walk to {n}', 'Ir hacia {n}'], 'ping': ['Ping', 'Avisar'], 'close': ['Close', 'Cerrar'],
+  't.sent': ['Sent {p} to {g}', '{p} enviado a {g}'],
+  't.pinged': ['{n} got a buzz with your location', '{n} ha recibido un aviso con tu ubicación'],
+  't.meet': ['Meeting point near {p} sent to {g}', 'Punto de encuentro cerca de {p} enviado a {g}'],
+  'zone.food': ['FOOD COURT', 'ZONA GASTRO'],
+  'loc.finding': ['Finding your location…', 'Buscando tu ubicación…'],
+  'loc.away': ["You're {km} km from the festival. Your dot appears on the map when you arrive.", 'Estás a {km} km del festival. Tu punto aparecerá en el mapa cuando llegues.'],
+  'loc.denied': ['Location is blocked. Allow it for this site in your browser settings.', 'La ubicación está bloqueada. Actívala para este sitio en los ajustes del navegador.'],
+  'loc.fail': ["Couldn't get your location. Try again outside or with Wi-Fi on.", 'No se pudo obtener tu ubicación. Prueba al aire libre o con el wifi activado.'],
+  'loc.unsup': ["This browser can't share your location.", 'Este navegador no puede compartir tu ubicación.'],
+
+  /* offline */
+  'off.title': ['Offline map', 'Mapa sin conexión'], 'off.saved': ['Saved on this phone', 'Guardado en este móvil'], 'off.updated': ['Updated {x}', 'Actualizado {x}'],
+  'off.doneP': ["The map, every stall and restroom, the full lineup and your plan now open with no signal.", 'El mapa, todos los puestos y aseos, el cartel completo y tu plan funcionan ahora sin cobertura.'],
+  'off.update': ['Update', 'Actualizar'], 'off.remove': ['Remove', 'Eliminar'],
+  'off.dl': ['Saving · {p}%', 'Guardando · {p}%'],
+  'off.intro': ['When thousands of people share one cell tower, signal drops. Save FestiGo to your phone and the map keeps working without a connection.',
+                'Cuando miles de personas comparten la misma antena, la cobertura cae. Guarda FestiGo en tu móvil y el mapa seguirá funcionando sin conexión.'],
+  'off.i1': ['Map with stages, food, restrooms and water', 'Mapa con escenarios, comida, aseos y agua'], 'off.i2': ['Full lineup, all 3 days', 'Cartel completo, los 3 días'],
+  'off.btn': ['Save map offline', 'Guardar mapa sin conexión'],
+  'off.removedT': ['Offline map removed from this phone', 'Mapa eliminado de este móvil'],
+  'off.okT': ['Offline map saved. It works with no signal', 'Mapa guardado. Funciona sin cobertura'],
+  'off.failT': ["Couldn't save the map. Check your connection and try again", 'No se pudo guardar el mapa. Revisa tu conexión e inténtalo de nuevo'],
+
+  /* lineup */
+  'onstage': ['ON STAGE NOW', 'AHORA EN EL ESCENARIO'], 'allchange': ['Changeover on all stages', 'Cambio de escenario en todos'],
+  'clashes': ['Clashes with {x}', 'Coincide con {x}'], 'remove.aria': ['Remove {n} from my plan', 'Quitar {n} de mi plan'],
+  'plan.empty.t': ['No sets starred for {d}', 'No tienes conciertos marcados {d}'],
+  'plan.empty.p': ["Tap any set in All sets to add it here. We'll remind you 15 minutes before it starts.", 'Toca cualquier concierto en Todo el cartel para añadirlo aquí. Te avisamos 15 minutos antes.'],
+  't.removed': ['Removed {n} from your plan', '{n} quitado de tu plan'],
+  't.addclash': ['Added. Heads up: clashes with {x}', 'Añadido. Ojo: coincide con {x}'],
+  't.addrem': ['Added {n}. Reminder set for {x}', '{n} añadido. Te avisamos a las {x}'],
+  't.add': ['Added {n} to your plan', '{n} añadido a tu plan'],
+
+  /* friends */
+  'sh.title': ['Share my live location', 'Compartir mi ubicación en directo'],
+  'sh.on': ['Visible to {g} until {x}', 'Visible para {g} hasta {x}'], 'sh.off': ['Off. Friends see your last position only.', 'Desactivado. Tus amigos solo ven tu última posición.'],
+  'dur.1h': ['For 1 hour', 'Durante 1 hora'], 'dur.night': ['Until 06:00', 'Hasta las 06:00'], 'dur.weekend': ['All weekend', 'Todo el finde'],
+  'sun.close': ['Sunday close', 'el cierre del domingo'],
+  'meet.t': ['Meet near {p}', 'Quedamos cerca de {p}'], 'meet.none': ['No meeting point yet', 'Aún no hay punto de encuentro'],
+  'meet.s': ['At {t}', 'A las {t}'], 'meet.none.s': ['Drop a pin so nobody gets lost', 'Marca un punto para que nadie se pierda'],
+  'meet.move': ['Move pin', 'Mover punto'], 'meet.set': ['Set meeting point', 'Fijar punto de encuentro'], 'meet.show': ['Show on map', 'Ver en el mapa'],
+  'grp.count': ['{g} · {a} of {b} sharing', '{g} · {a} de {b} compartiendo'],
+  'paused.full': ['Location paused · last seen {x} near {p}', 'Ubicación en pausa · visto a las {x} cerca de {p}'],
+  'find.aria': ['Find {n} on the map', 'Buscar a {n} en el mapa'], 'ping.aria': ['Ping {n}', 'Avisar a {n}'],
+  'inv.h': ['Invite friends', 'Invitar amigos'], 'inv.t': ['Share a link to FestiGo', 'Comparte un enlace a FestiGo'],
+  'inv.s': ['Friends who open it get the app and join {g}.', 'Quien lo abra descarga la app y entra en {g}.'],
+  'inv.btn': ['Share link', 'Compartir'], 'inv.copied': ['Invite link copied. Paste it in your group chat', 'Enlace copiado. Pégalo en el chat del grupo'],
+  'inv.text': ['Join {g} on FestiGo for Brisa Fest 2027', 'Únete a {g} en FestiGo para Brisa Fest 2027'],
+  'inv.local': ['Put FestiGo online to get a link you can share', 'Publica FestiGo en internet para tener un enlace que compartir'],
+  't.shon': ['Sharing with {g} until {x}', 'Compartiendo con {g} hasta {x}'], 't.shoff': ['Location sharing paused', 'Ubicación en pausa'],
+  't.shuntil': ['Sharing until {x}', 'Compartiendo hasta {x}'],
+
+  /* momento */
+  'm.today': ['Today', 'Hoy'],
+  'm.idle': ["<b>Today's Momento hasn't dropped yet.</b> It arrives once a day at a surprise time, for everyone in your group at once. You get two minutes to post what you're seeing, with both cameras.",
+             '<b>El Momento de hoy aún no ha llegado.</b> Llega una vez al día, a una hora sorpresa, a todo tu grupo a la vez. Tienes dos minutos para publicar lo que ves, con las dos cámaras.'],
+  'm.idle.keep': ['Keep FestiGo open or installed and turn on Momento alerts in Settings so you hear it.', 'Mantén FestiGo abierta o instalada y activa los avisos de Momento en Ajustes para enterarte.'],
+  'm.live': ['Momento is live', 'El Momento está activo'], 'm.up': ['Time is up, you can still post', 'Se acabó el tiempo, aún puedes publicar'],
+  'm.p1': ['Your friends already posted. Share yours to unlock their photos.', 'Tus amigos ya han publicado. Comparte el tuyo para ver sus fotos.'],
+  'm.p2': ['Late posts show up with a "late" label.', 'Las publicaciones fuera de tiempo llevan la etiqueta «tarde».'],
+  'm.open': ['Open camera', 'Abrir cámara'], 'm.posted': ['Posted at {x}', 'Publicado a las {x}'],
+  'm.late': ['{n} min late, still counts.', '{n} min tarde, pero cuenta.'], 'm.ontime': ['On time.', 'A tiempo.'],
+  'm.next': ['Next Momento drops tomorrow, at a time nobody knows.', 'El próximo Momento llega mañana, a una hora que nadie sabe.'],
+  'm.posts': ['{n} posts', '{n} publicaciones'], 'late.n': ['{n} min late', '{n} min tarde'], 'ontime': ['On time', 'A tiempo'],
+  'm.yday': ['Yesterday', 'Ayer'],
+  'you': ['You', 'Tú'], 'lock': ['Post your Momento to see this', 'Publica tu Momento para verlo'], 'swap': ['Tap to swap', 'Toca para cambiar'],
+  'alt.back': ["{n}'s photo", 'Foto de {n}'], 'alt.front': ["{n}'s selfie", 'Selfie de {n}'],
+  't.already': ["You've already posted today's Momento", 'Ya has publicado el Momento de hoy'],
+  't.notyet': ["Today's Momento hasn't dropped yet", 'El Momento de hoy aún no ha llegado'],
+  't.posted': ["Posted. Your friends' Momentos are unlocked", 'Publicado. Ya puedes ver los Momentos de tus amigos'],
+  't.storefail': ["Posted, but this phone is out of space to keep it", 'Publicado, pero no hay espacio en el móvil para guardarlo'],
+  'home.m.idle': ["Today's Momento hasn't dropped yet. Be ready.", 'El Momento de hoy aún no ha llegado. Prepárate.'],
+  'home.m.live': ['Momento is live. {x} left.', 'El Momento está activo. Quedan {x}.'],
+  'home.m.late': ["You missed the 2 minutes. You can still post late.", 'Se pasaron los 2 minutos. Aún puedes publicar tarde.'],
+  'home.m.done': ['You posted today at {x}. See what your friends saw.', 'Publicaste hoy a las {x}. Mira lo que vieron tus amigos.'],
+  'home.m.see': ['See Momentos', 'Ver Momentos'],
+
+  /* camera */
+  'cam.close': ['Close camera', 'Cerrar cámara'],
+  'cam.upload': ['Use a photo from your library', 'Usar una foto de la galería'], 'cam.shutter': ['Take photo', 'Hacer foto'], 'cam.flip': ['Switch camera', 'Cambiar de cámara'],
+  'cam.point': ['Point it at what you see', 'Apunta a lo que estás viendo'],
+  'cam.starting': ['Opening the camera…', 'Abriendo la cámara…'],
+  'cam.front': ['Now the front camera. Smile!', 'Ahora la cámara frontal. ¡Sonríe!'],
+  'cam.selfieNative': ['Now take a selfie', 'Ahora hazte un selfie'],
+  'cam.denied': ["FestiGo can't use the camera because access is blocked. Allow camera access for this site in your browser settings, or take the photo with your camera app.",
+                 'FestiGo no puede usar la cámara porque el acceso está bloqueado. Permite el acceso a la cámara para este sitio en los ajustes del navegador o haz la foto con la app de cámara.'],
+  'cam.none': ['No camera was found on this device. You can pick a photo instead.', 'No se ha encontrado ninguna cámara en este dispositivo. Puedes elegir una foto.'],
+  'cam.unsup': ["This browser can't open the camera from here. Open FestiGo from its https:// link, or use your camera app.", 'Este navegador no puede abrir la cámara desde aquí. Abre FestiGo desde su enlace https:// o usa la app de cámara.'],
+  'cam.busy': ['Another app is using the camera. Close it and try again.', 'Otra app está usando la cámara. Ciérrala e inténtalo de nuevo.'],
+  'cam.native': ['Take photo with camera app', 'Hacer foto con la app de cámara'], 'cam.nativeSelfie': ['Take selfie with camera app', 'Hacer selfie con la app de cámara'],
+  'cam.retry': ['Try the camera again', 'Volver a probar la cámara'],
+  'cam.embed': ["Take the photo with your phone's camera. Then you'll take a selfie.", 'Haz la foto con la cámara del móvil. Después te harás un selfie.'],
+  'rv.cap': ['Add a caption (optional)', 'Añade un texto (opcional)'], 'rv.retake': ['Retake', 'Repetir'], 'rv.post': ['Post Momento', 'Publicar Momento'],
+  'rv.back': ['Your photo', 'Tu foto'], 'rv.front': ['Your selfie', 'Tu selfie'],
+
+  /* settings */
+  'set.lang': ['Language', 'Idioma'], 'set.lang.s': ['Changes all text in the app. Artist and venue names stay as they are.', 'Cambia todos los textos de la app. Los nombres de artistas y lugares no cambian.'],
+  'set.notif': ['Notifications', 'Notificaciones'],
+  'set.mom': ['Momento alerts', 'Avisos de Momento'], 'set.mom.s': ['Get notified when the daily Momento drops', 'Recibe un aviso cuando llegue el Momento del día'],
+  'set.rem': ['Set reminders', 'Recordatorios de conciertos'], 'set.rem.s': ['15 minutes before a starred set starts', '15 minutos antes de un concierto marcado'],
+  'set.notifBlocked': ['Notifications are blocked for this site. Alerts show inside the app only.', 'Las notificaciones están bloqueadas para este sitio. Los avisos solo se ven dentro de la app.'],
+  'set.more': ['Location and map', 'Ubicación y mapa'], 'set.loc': ['Location sharing', 'Compartir ubicación'],
+  'set.off.saved': ['Saved on this phone', 'Guardado en este móvil'], 'set.off.none': ['Not saved yet', 'Aún no guardado'],
+  'set.app': ['App', 'App'], 'set.install': ['Add FestiGo to your home screen', 'Añade FestiGo a tu pantalla de inicio'],
+  'set.install.s': ['Opens full screen, like any other app', 'Se abre a pantalla completa, como cualquier app'],
+  'set.install.ios': ['On iPhone: tap Share, then "Add to Home Screen".', 'En iPhone: toca Compartir y luego «Añadir a pantalla de inicio».'],
+  'set.install.other': ['Use your browser menu and choose "Install app" or "Add to Home screen".', 'Usa el menú del navegador y elige «Instalar app» o «Añadir a pantalla de inicio».'],
+  'set.installed': ['FestiGo is installed on this device', 'FestiGo está instalada en este dispositivo'],
+  'set.welcome': ['Show welcome screen', 'Ver pantalla de bienvenida'],
+  'set.data': ['Your photos, plan and settings are stored only on this device.', 'Tus fotos, tu plan y tus ajustes se guardan solo en este dispositivo.'],
+  't.lang': ['App language: English', 'Idioma de la app: español'],
+  't.momOn': ['Momento alerts on', 'Avisos de Momento activados'], 't.momOff': ['Momento alerts off', 'Avisos de Momento desactivados'],
+  't.remOn': ['Set reminders on', 'Recordatorios activados'], 't.remOff': ['Set reminders off', 'Recordatorios desactivados'],
+};
+function t(k, v) {
+  const e = STR[k]; let s = e ? (S.lang === 'es' ? e[1] : e[0]) : k;
+  if (v) s = s.replace(/\{(\w+)\}/g, (_, n) => v[n] != null ? v[n] : '');
+  return s;
+}
+const L = o => (o && typeof o === 'object') ? (o[S.lang] ?? o.en) : o;
+const num = (x, d) => { const s = x.toFixed(d); return S.lang === 'es' ? s.replace('.', ',') : s; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- time ---------- */
+const fmtClock = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const fmt = m => { m = Math.floor(m); m = ((m % 1440) + 1440) % 1440; return pad(Math.floor(m / 60)) + ':' + pad(m % 60); };
+const toMin = s => { let [h, m] = s.split(':').map(Number); if (h < 12) h += 24; return h * 60 + m; };
+const FEST = { fri: [2027, 6, 9], sat: [2027, 6, 10], sun: [2027, 6, 11] };
+const DAYS = ['fri', 'sat', 'sun'];
+const FEST_START = new Date(2027, 6, 9, 18, 0).getTime();
+const FEST_END = new Date(2027, 6, 12, 6, 0).getTime();
+/* Which festival day is it right now? A festival day runs from noon to noon the next day. */
+function festNow() {
+  const now = Date.now();
+  for (const k of DAYS) {
+    const [y, m, d] = FEST[k];
+    const a = new Date(y, m, d, 12).getTime(), b = new Date(y, m, d + 1, 12).getTime();
+    if (now >= a && now < b) return { day: k, min: (now - new Date(y, m, d).getTime()) / 60000, n: DAYS.indexOf(k) + 1 };
+  }
+  return null;
+}
+const dayKey = (d = new Date()) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+
+/* ---------- icons ---------- */
+const IC = {
+  music: '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  food: '<path d="M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17 21V3c-2.2 0-3.5 2.5-3.5 6.5S15 14 17 14"/>',
+  bar: '<path d="M5 4h14l-7 8zM12 12v8M8 20h8"/>',
+  wc: '<circle cx="7.5" cy="4.5" r="2"/><path d="M5.5 21v-6H4l1.8-6h3.4l1.8 6H9.5v6"/><circle cx="16.5" cy="4.5" r="2"/><path d="M14.5 21v-7.5H13.5V9h6v4.5h-1V21"/>',
+  drop: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>',
+  cross: '<path d="M12 5v14M5 12h14"/>',
+  gate: '<path d="M4 21V9l8-5 8 5v12M9 21v-7h6v7"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  umbrella: '<path d="M3 12a9 9 0 0 1 18 0zM12 12v7a2 2 0 0 1-4 0"/>',
+  route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/>',
+  share: '<path d="M12 3v13M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  wave: '<path d="M7 12V6.5a1.5 1.5 0 0 1 3 0V11M10 10.5V5a1.5 1.5 0 0 1 3 0v5.5M13 10V6a1.5 1.5 0 0 1 3 0v6M16 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  chev: '<path d="m9 6 6 6-6 6"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14a5 5 0 0 1 5 5"/>',
+  nav: '<path d="M3 11 21 3l-8 18-2-8z"/>',
+  locate: '<circle cx="12" cy="12" r="3.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+};
+const svgI = (k, extra = '') => `<svg viewBox="0 0 24 24" ${extra}>${IC[k]}</svg>`;
+const LOGO = `<svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2c-6.6 0-12 5.2-12 11.7C5 22.5 17 32 17 32s12-9.5 12-18.3C29 7.2 23.6 2 17 2z" fill="#FF5C8A"/><circle cx="17" cy="13.5" r="5.2" fill="#0F0D2E"/><circle cx="17" cy="13.5" r="2.2" fill="#FFC53D"/></svg>`;
+
+/* ---------- festival data ---------- */
+const STAGES = [
+  { id: 'sol', name: 'Escenario Sol', short: 'Sol', c: '#FF5C8A' },
+  { id: 'luna', name: 'Escenario Luna', short: 'Luna', c: '#9C8CFF' },
+  { id: 'levante', name: 'Carpa Levante', short: 'Levante', c: '#2EC4B6' },
+];
+const LINEUP = {
+  fri: {
+    sol: [['19:30','20:30','Pájaro Azul','indie pop'],['21:00','22:15','Rumba Callejera','rumba'],['22:45','00:00','Carla Montes','pop'],['00:30','02:00','Los Invisibles','rock'],['02:30','03:45','Kiko Delta','reggaetón']],
+    luna: [['19:00','20:00','Tres Lunas','folk'],['20:30','21:30','Bruma','dream pop'],['22:00','23:15','Coral Fénix','soul'],['23:45','01:00','Alba Serena','flamenco fusion'],['01:30','02:45','Grupo Faro','indie rock']],
+    levante: [['22:00','23:30','Antena Roja','house'],['23:30','01:00','Neón Mística','techno'],['01:00','03:00','Ondas Bravas','techno'],['03:00','06:00','Fase Lunar','hard groove']],
+  },
+  sat: {
+    sol: [['19:30','20:30','Las Hermanas Brea','indie pop'],['21:00','22:15','Nórdico Sur','indie rock'],['22:30','23:50','Valentina Ríos','pop'],['00:30','02:00','MARAÑA','flamenco electrónico'],['02:30','03:45','Perla Negra','reggaetón']],
+    luna: [['19:00','20:00','Cielo Raso','folk'],['20:30','21:45','Los Gatos de Ruzafa','garage'],['22:15','23:30','Isla Mínima','synth pop'],['23:45','01:00','La Bruja Mecánica','electro-cumbia'],['01:15','02:30','Ámbar','R&B']],
+    levante: [['22:00','23:30','Brisa Nocturna','deep house'],['23:30','01:00','DJ Salitre','house'],['01:00','03:00','Ruiz b2b Marea','techno'],['03:00','06:00','Mar de Fondo','hard groove']],
+  },
+  sun: {
+    sol: [['19:00','20:15','Arena Fina','indie pop'],['20:45','22:00','Sara Llorens','singer-songwriter'],['22:30','23:45','Los del Puerto','rumba rock'],['00:15','01:45','Valle Eterno','closing headliner']],
+    luna: [['19:30','20:30','Gira Sol','folk pop'],['21:00','22:15','Medusa','post-punk'],['22:45','00:00','Cosmos Club','disco'],['00:30','01:45','Niña Pirata','urban']],
+    levante: [['22:00','00:00','Sal y Cal','house'],['00:00','02:00','Kilómetro Cero','techno'],['02:00','05:00','Despedida all-stars','closing set']],
+  },
+};
+function setsFor(day) {
+  const out = [];
+  STAGES.forEach(s => LINEUP[day][s.id].forEach(([a, b, name, genre]) =>
+    out.push({ id: `${day}|${s.id}|${name}`, day, stage: s, a, b, start: toMin(a), end: toMin(b), name, genre })));
+  return out;
+}
+const ALLSETS = DAYS.flatMap(setsFor);
+const favs = new Set(store.get('favs', []).filter(id => ALLSETS.some(s => s.id === id)));
+const saveFavs = () => store.set('favs', [...favs]);
+
+const TYPES = {
+  stage:   { group: 'stage', c: '#FF5C8A', k: '#FFF6E5', icon: 'music' },
+  food:    { group: 'food', c: '#FFC53D', k: '#0F0D2E', icon: 'food' },
+  bar:     { group: 'food', c: '#FFC53D', k: '#0F0D2E', icon: 'bar' },
+  wc:      { group: 'wc', c: '#2EC4B6', k: '#0F0D2E', icon: 'wc' },
+  water:   { group: 'water', c: '#5BB8FF', k: '#0F0D2E', icon: 'drop' },
+  aid:     { group: 'water', c: '#FF6B57', k: '#FFF6E5', icon: 'cross' },
+  service: { group: 'service', c: '#A9A3D6', k: '#0F0D2E', icon: 'gate' },
+};
+const PLACES = [
+  { id: 'sol', type: 'stage', name: 'Escenario Sol', x: 200, y: 77, label: 'SOL', stage: 'sol',
+    desc: { en: 'Main stage. Best sound is by the mixing desk, about 40 m back.', es: 'Escenario principal. El mejor sonido está junto a la mesa de mezclas, unos 40 m atrás.' } },
+  { id: 'luna', type: 'stage', name: 'Escenario Luna', x: 48, y: 300, label: 'LUNA', stage: 'luna',
+    desc: { en: 'Second stage under the pine trees. Shaded during the afternoon sets.', es: 'Segundo escenario bajo los pinos. Con sombra durante los conciertos de tarde.' } },
+  { id: 'levante', type: 'stage', name: 'Carpa Levante', x: 318, y: 300, label: 'LEVANTE', stage: 'levante',
+    desc: { en: 'Electronic tent. Open until 06:00.', es: 'Carpa de electrónica. Abierta hasta las 06:00.' } },
+  { id: 'paella', type: 'food', name: 'Paella Corner', x: 120, y: 418, wait: 9, close: '02:00', menu: [['Paella valenciana', '€9'], ['Arroz de verduras (V)', '€8'], ['Tinto de verano', '€4']] },
+  { id: 'bocatas', type: 'food', name: 'Bocatas El Puerto', x: 175, y: 426, wait: 4, close: '04:00', menu: [['Bocata de calamares', '€8'], ['Bocata de tortilla (V)', '€6'], ['Patatas bravas', '€5']] },
+  { id: 'tacos', type: 'food', name: 'Tacos Verdes', x: 232, y: 426, wait: 6, close: '03:00', menu: [['Tacos de setas (VG), x3', '€8'], ['Nachos con guacamole (VG)', '€7'], ['Agua de jamaica', '€3']] },
+  { id: 'horchata', type: 'food', name: 'Horchatería Brisa', x: 288, y: 418, wait: 2, close: '03:00', menu: [['Horchata de chufa', '€3.50'], ['Fartons, x2', '€2'], ['Granizado de limón', '€3']] },
+  { id: 'churros', type: 'food', name: 'Churrería La Ola', x: 336, y: 200, wait: 12, close: '06:00', menu: [['Churros con chocolate', '€5'], ['Porras, x3', '€4'], ['Café con hielo', '€2.50']] },
+  { id: 'barra', type: 'bar', name: 'Barra Central', x: 200, y: 282, wait: 5, close: '05:00', menu: [['Caña', '€4'], ['Tinto de verano', '€5'], ['Agua 50 cl', '€1.50']] },
+  { id: 'wc1', type: 'wc', name: 'Aseos Norte', x: 62, y: 160, wait: 3, stalls: 24, accessible: true },
+  { id: 'wc2', type: 'wc', name: 'Aseos Sol', x: 340, y: 128, wait: 11, stalls: 18, accessible: false },
+  { id: 'wc3', type: 'wc', name: 'Aseos Plaza', x: 150, y: 350, wait: 5, stalls: 30, accessible: true },
+  { id: 'wc4', type: 'wc', name: 'Aseos Playa', x: 330, y: 398, wait: 1, stalls: 12, accessible: true },
+  { id: 'agua1', type: 'water', name: 'Agua gratis · Plaza', x: 248, y: 205,
+    desc: { en: 'Free drinking water. Bring an empty bottle; staff refill festival cups too.', es: 'Agua potable gratis. Trae una botella vacía; también rellenamos los vasos del festival.' } },
+  { id: 'agua2', type: 'water', name: 'Agua gratis · Luna', x: 92, y: 382,
+    desc: { en: 'Free drinking water next to the Luna crowd area.', es: 'Agua potable gratis junto a la zona de público de Luna.' } },
+  { id: 'aid', type: 'aid', name: 'Puesto Sanitario', x: 44, y: 446,
+    desc: { en: 'First aid with medical staff, open all night. Free earplugs and sunscreen.', es: 'Primeros auxilios con personal sanitario, abierto toda la noche. Tapones y crema solar gratis.' } },
+  { id: 'gate', type: 'service', icon: 'gate', name: 'Acceso Norte', x: 200, y: 40,
+    desc: { en: 'Main entrance and exit. Re-entry allowed until 02:00 with your wristband.', es: 'Entrada y salida principal. Puedes volver a entrar hasta las 02:00 con tu pulsera.' } },
+  { id: 'lockers', type: 'service', icon: 'lock', name: 'Taquillas', x: 302, y: 62,
+    desc: { en: 'Lockers with phone chargers. €10 per night.', es: 'Taquillas con cargador de móvil. 10 € por noche.' } },
+  { id: 'topup', type: 'service', icon: 'card', name: 'Recarga pulsera', x: 98, y: 62,
+    desc: { en: 'Top up your cashless wristband by card or cash.', es: 'Recarga tu pulsera cashless con tarjeta o en efectivo.' } },
+  { id: 'chill', type: 'service', icon: 'umbrella', name: 'Zona Chill', x: 346, y: 484,
+    desc: { en: 'Hammocks on the sand. Quiet zone, no amplified music.', es: 'Hamacas en la arena. Zona tranquila, sin música amplificada.' } },
+];
+const placeById = id => PLACES.find(p => p.id === id);
+const GATE = placeById('gate');
+
+/* Venue geography: map units are ~1.6 m; north is up. Change VENUE to move the festival. */
+const VENUE = { lat: 39.4586, lng: -0.3262 };
+const M_PER_UNIT = 1.6, M_LAT = 111320, M_LNG = 111320 * Math.cos(VENUE.lat * Math.PI / 180);
+const LAT0 = VENUE.lat + 300 * M_PER_UNIT / M_LAT, LNG0 = VENUE.lng - 200 * M_PER_UNIT / M_LNG;
+const project = (lat, lng) => ({ x: (lng - LNG0) * M_LNG / M_PER_UNIT, y: (LAT0 - lat) * M_LAT / M_PER_UNIT });
+function kmBetween(a, b) {
+  const R = 6371, r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lng - a.lng);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destination=${VENUE.lat},${VENUE.lng}&travelmode=transit`;
+
+/* You: placed on the map only when your phone is actually inside the grounds */
+const ME = { onsite: false, x: null, y: null, km: null, watching: false, watchId: null };
+const origin = () => ME.onsite ? ME : GATE;
+
+const PEOPLE = {
+  me:    { name: 'You', ini: 'TÚ', c: '#FFC53D' },
+  lucia: { name: 'Lucía', ini: 'LU', c: '#FF5C8A', skin: '#F0C29F', hair: '#24150E', shirt: '#2EC4B6', bg: ['#FF9AB8', '#7B5CFF'], glasses: true, long: true, x: 186, y: 148, sharing: true,
+           status: { en: 'Front row at Escenario Sol', es: 'En primera fila del Escenario Sol' }, upd: 1 },
+  marc:  { name: 'Marc', ini: 'MA', c: '#7BD389', skin: '#D9A57E', hair: '#5A3A22', shirt: '#FFC53D', bg: ['#8BE3A0', '#2EC4B6'], glasses: false, long: false, x: 124, y: 432, sharing: true,
+           status: { en: 'In the paella queue', es: 'En la cola de la paella' }, upd: 2 },
+  nerea: { name: 'Nerea', ini: 'NE', c: '#9C8CFF', skin: '#C98D64', hair: '#14100D', shirt: '#FFF6E5', bg: ['#B9A8FF', '#FF5C8A'], glasses: false, long: true, x: 322, y: 314, sharing: true,
+           status: { en: 'Dancing at Carpa Levante', es: 'Bailando en la Carpa Levante' }, upd: 1 },
+  javi:  { name: 'Javi', ini: 'JA', c: '#5BB8FF', skin: '#E8B894', hair: '#A0522D', shirt: '#1B1740', bg: ['#7FD0FF', '#3A3AA0'], glasses: true, long: false, x: 152, y: 366, sharing: false, last: '22:58' },
+};
+const FRIENDS = ['lucia', 'marc', 'nerea', 'javi'];
+const GROUP = 'Los de Malva-rosa';
+const nameOf = id => id === 'me' ? t('you') : PEOPLE[id].name;
+
+/* ---------- state ---------- */
+let view = 'home', lastView = 'home', filter = 'all', sel = null, route = null, meetMode = false;
+let meet = store.get('meet', { x: 288, y: 404, name: 'Horchatería Brisa', time: '00:10' });
+let share = store.get('share', { on: true, mode: 'night', until: null });
+let day = (festNow() || {}).day || 'fri', luMode = 'grid', luScrolled = false;
+
+/* ---------- helpers ---------- */
+const dist = (a, b) => Math.round(Math.hypot(a.x - b.x, a.y - b.y) * M_PER_UNIT * 1.2);  // with path detour
+const walk = m => Math.max(1, Math.round(m / 70));
+const qClass = w => w <= 4 ? 'good' : w <= 8 ? 'warn' : 'bad';
+const qColor = w => w <= 4 ? '#7BD389' : w <= 8 ? '#FFC53D' : '#FF6B57';
+let toastT;
+function toast(msg) {
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function nearestPlace(pt) {
+  let best = null, bd = 1e9;
+  PLACES.forEach(p => { const d = Math.hypot(p.x - pt.x, p.y - pt.y); if (d < bd) { bd = d; best = p; } });
+  return best;
+}
+function applyStatic() {
+  document.documentElement.lang = S.lang;
+  $$('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  $$('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  $$('[data-i18n-title]').forEach(el => el.title = t(el.dataset.i18nTitle));
+  $$('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
+}
+
+/* ---------- navigation ---------- */
+const VIEWS = {
+  home: () => ['FestiGo', t('v.home.s')],
+  map: () => [t('v.map'), t('v.map.s')],
+  lineup: () => [t('v.lineup'), t('v.lineup.s')],
+  friends: () => [t('v.friends'), GROUP],
+  momento: () => ['Momento', t('v.momento.s')],
+  settings: () => [t('settings'), t('v.settings.s')],
+};
+function setHeader() { const [a, b] = VIEWS[view](); $('#vtitle').textContent = a; $('#vsub').textContent = b; }
+function go(v) {
+  if (v !== 'settings') lastView = v;
+  view = v;
+  $$('.view').forEach(el => el.hidden = el.dataset.view !== v);
+  $$('[data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === v));
+  $('#meBtn').classList.toggle('on', v === 'settings');
+  setHeader();
+  if (v === 'home') renderHome();
+  if (v === 'lineup') { renderLineup(); if (!luScrolled) { scrollToNow(); luScrolled = true; } }
+  if (v === 'friends') renderFriends();
+  if (v === 'momento') { renderMomento(); $('#mDot').hidden = true; }
+  if (v === 'settings') renderSettings();
+  if (v === 'map') { renderPins(); renderPeople(); }
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); });
+$('#meBtn').addEventListener('click', () => go(view === 'settings' ? lastView : 'settings'));
+
+/* =========================================================
+   WELCOME
+   ========================================================= */
+function renderWelcome() {
+  $('#ob').innerHTML = `
+    <div class="mark">${LOGO}FestiGo</div>
+    <h1>${t('ob.h')}</h1>
+    <div class="fest"><span class="sh-ic" style="--c:#FF5C8A;--k:#FFF6E5">${svgI('music')}</span><div><b>${t('ob.fest')}</b><small>${t('ob.fest.s')}</small></div></div>
+    <ul>
+      <li><span class="sh-ic sm" style="--c:#FFC53D;--k:#0F0D2E">${svgI('pin')}</span>${t('ob.f1')}</li>
+      <li><span class="sh-ic sm" style="--c:#9C8CFF;--k:#0F0D2E">${svgI('cal')}</span>${t('ob.f2')}</li>
+      <li><span class="sh-ic sm" style="--c:#7BD389;--k:#0F0D2E">${svgI('users')}</span>${t('ob.f3')}</li>
+      <li><span class="sh-ic sm" style="--c:#FF5C8A;--k:#0F0D2E">${svgI('camera')}</span>${t('ob.f4')}</li>
+    </ul>
+    <div class="grow"></div>
+    <div class="gl" style="margin:0">${t('ob.lang')}</div>
+    <div class="langs" role="radiogroup" aria-label="${t('ob.lang')}">${[['en', 'English', 'EN'], ['es', 'Español', 'ES']].map(([k, l, c]) =>
+      `<button data-lang="${k}" role="radio" aria-checked="${S.lang === k}" class="${S.lang === k ? 'on' : ''}" lang="${k}"><span class="lc">${c}</span>${l}</button>`).join('')}</div>
+    <button class="btn pri big" id="obGo" style="flex:none">${t('ob.go')}</button>`;
+}
+function showWelcome() { renderWelcome(); $('#ob').hidden = false; }
+$('#ob').addEventListener('click', e => {
+  const lb = e.target.closest('[data-lang]');
+  if (lb) { setLang(lb.dataset.lang, true); renderWelcome(); return; }
+  if (e.target.closest('#obGo')) { store.set('welcomed', true); $('#ob').hidden = true; go('home'); }
+});
+
+/* =========================================================
+   HOME (front page)
+   ========================================================= */
+function heroStatus() {
+  const now = Date.now(), fn = festNow();
+  if (now < FEST_START && !fn) {
+    const ms = FEST_START - now, d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4);
+    return `<div class="count"><div><b>${d}</b><span>${t('h.days')}</span></div><div><b>${h}</b><span>${t('h.hrs')}</span></div><div><b>${m}</b><span>${t('h.min')}</span></div></div>
+      <div class="status">${t('h.starts')}</div>`;
+  }
+  if (fn) {
+    const sets = setsFor(fn.day), n = fn.min, live = sets.filter(s => s.start <= n && n < s.end);
+    const next = sets.filter(s => s.start > n).sort((a, b) => a.start - b.start)[0];
+    const first = sets.slice().sort((a, b) => a.start - b.start)[0];
+    let body;
+    if (live.length) body = `<span class="live">${t('h.livenow')}</span>` + live.map(s => `<div><b>${esc(s.name)}</b> · ${s.stage.short} · ${t('until.l', { x: s.b })}</div>`).join('');
+    else if (n < first.start) body = t('h.doors', { x: first.a });
+    else if (next) body = t('h.between', { n: esc(next.name), x: next.a });
+    else body = t('h.over');
+    return `<div class="status"><span style="font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.85">${t('h.daylabel', { n: fn.n })}</span>${body}</div>`;
+  }
+  return `<div class="status">${t('h.over')}</div>`;
+}
+function planPreview() {
+  const fn = festNow();
+  let list = ALLSETS.filter(s => favs.has(s.id)).sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.start - b.start);
+  if (fn) list = list.filter(s => DAYS.indexOf(s.day) > DAYS.indexOf(fn.day) || (s.day === fn.day && s.end > fn.min));
+  return list.slice(0, 3);
+}
+function renderHome() {
+  const plan = planPreview();
+  const shortestWc = PLACES.filter(p => p.type === 'wc').sort((a, b) => a.wait - b.wait)[0];
+  const m = momState();
+  let mcard;
+  if (!m.active) mcard = `<div class="mcard calm"><span class="k">Momento</span><p>${t('home.m.idle')}</p></div>`;
+  else if (m.posted) mcard = `<div class="mcard calm"><span class="k">Momento</span><p>${t('home.m.done', { x: fmtClock(new Date(m.posted.at)) })}</p><div class="acts" style="margin-top:0"><button class="btn" data-h="momento">${t('home.m.see')}</button></div></div>`;
+  else if (m.left > 0) mcard = `<div class="mcard"><span class="k">Momento</span><p><b>${t('home.m.live', { x: mmss(m.left) })}</b></p><div class="acts" style="margin-top:0"><button class="btn dark" data-h="cam">${svgI('camera')}${t('m.open')}</button></div></div>`;
+  else mcard = `<div class="mcard calm"><span class="k">Momento</span><p>${t('home.m.late')}</p><div class="acts" style="margin-top:0"><button class="btn pri" data-h="cam">${svgI('camera')}${t('m.open')}</button></div></div>`;
+  const sharing = FRIENDS.filter(id => PEOPLE[id].sharing);
+  $('#homePad').innerHTML = `
+    <div class="hero" id="hero">
+      <div class="ey">${t('h.ey')}</div>
+      <h3>${t('h.place')}</h3>
+      <div class="dt">${t('h.dates')}</div>
+      <div id="heroStatus">${heroStatus()}</div>
+    </div>
+    <div class="sec">
+      <div class="qgrid">
+        <button class="qt" data-h="f:food"><span class="sh-ic sm" style="--c:#FFC53D;--k:#0F0D2E">${svgI('food')}</span><span>${t('q.food')}<small>${t('q.food.s', { n: PLACES.filter(p => p.type === 'food' || p.type === 'bar').length })}</small></span></button>
+        <button class="qt" data-h="f:wc"><span class="sh-ic sm" style="--c:#2EC4B6;--k:#0F0D2E">${svgI('wc')}</span><span>${t('q.wc')}<small>${t('q.wc.s', { x: shortestWc.name.replace('Aseos ', '') })}</small></span></button>
+        <button class="qt" data-h="f:water"><span class="sh-ic sm" style="--c:#5BB8FF;--k:#0F0D2E">${svgI('drop')}</span><span>${t('q.water')}<small>${t('q.water.s', { n: PLACES.filter(p => p.type === 'water').length })}</small></span></button>
+        <button class="qt" data-h="p:aid"><span class="sh-ic sm" style="--c:#FF6B57;--k:#FFF6E5">${svgI('cross')}</span><span>${t('q.aid')}<small>${t('q.aid.s')}</small></span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="gl"><span>${t('h.plan')}</span><button data-h="plan">${t('h.seeall')}</button></div>
+      ${plan.length ? plan.map(s => `<div class="prow"><div class="t"><b>${s.a}</b>${t('day.' + s.day)}</div><div class="n"><b>${esc(s.name)}</b><span class="stg" style="--c:${s.stage.c}">${s.stage.name}</span></div><span></span></div>`).join('')
+        : `<div class="card"><span class="hintx">${t('h.plan.empty')}</span><button class="btn pri" data-h="lineup">${svgI('cal')}${t('h.lineup')}</button></div>`}
+    </div>
+    <div class="sec">${mcard}</div>
+    <div class="sec">
+      <button class="fstrip" data-h="friends"><span class="avs">${FRIENDS.map(id => `<span class="av sm ${PEOPLE[id].sharing ? '' : 'off'}" style="--c:${PEOPLE[id].c}">${PEOPLE[id].ini}</span>`).join('')}</span>
+        <div><b>${GROUP}</b><small style="display:block;color:var(--a-dim);font-size:12px">${t('h.friends', { a: sharing.length, b: FRIENDS.length })}</small></div>${svgI('chev', 'class="chev"')}</button>
+    </div>
+    <div class="sec">
+      <div class="gl"><span>${t('h.getthere')}</span></div>
+      <div class="card">
+        <div class="row"><span class="sh-ic" style="--c:#2EC4B6;--k:#0F0D2E">${svgI('pin')}</span><div><b>${t('h.addr')}</b><small id="farTxt">${ME.onsite ? t('h.onsite') : ME.km != null ? t('h.km', { km: num(ME.km, 1) }) : t('h.transit')}</small></div></div>
+        <div class="acts" style="margin-top:0"><a class="btn pri" href="${DIRECTIONS}" target="_blank" rel="noopener">${svgI('nav')}${t('h.dir')}</a>${EMBED ? '' : `<button class="btn" data-h="far">${svgI('locate')}${t('h.far')}</button>`}</div>
+      </div>
+    </div>`;
+}
+function tickHome() { const el = $('#heroStatus'); if (el) el.innerHTML = heroStatus(); }
+$('#homePad').addEventListener('click', e => {
+  const b = e.target.closest('[data-h]'); if (!b) return;
+  const h = b.dataset.h;
+  if (h.startsWith('f:')) { filter = h.slice(2); renderChips(); go('map'); }
+  if (h === 'p:aid') { go('map'); openPlace('aid', true); }
+  if (h === 'plan') { luMode = 'plan'; go('lineup'); }
+  if (h === 'lineup') { luMode = 'grid'; go('lineup'); }
+  if (h === 'friends') go('friends');
+  if (h === 'momento') go('momento');
+  if (h === 'cam') { go('momento'); openCam(); }
+  if (h === 'far') locate(false);
+});
+
+/* =========================================================
+   LOCATION (real GPS, only when you ask for it)
+   ========================================================= */
+function onPos(pos, center) {
+  const { latitude: lat, longitude: lng } = pos.coords;
+  ME.km = kmBetween({ lat, lng }, VENUE);
+  const p = project(lat, lng);
+  ME.onsite = p.x >= 26 && p.x <= 374 && p.y >= 40 && p.y <= 468;
+  if (ME.onsite) { ME.x = p.x; ME.y = p.y; }
+  renderPeople(); renderRoute();
+  if (view === 'home') renderHome();
+  if (center) {
+    if (ME.onsite) { go('map'); centerOn(ME.x, ME.y, 220, 0); }
+    else toast(t('loc.away', { km: num(ME.km, 1) }));
+  }
+}
+function locate(center) {
+  if (!('geolocation' in navigator)) { toast(t('loc.unsup')); return; }
+  const btn = $('#zme'); btn.classList.add('busy');
+  if (view !== 'map' || !center) toast(t('loc.finding'));
+  navigator.geolocation.getCurrentPosition(pos => {
+    btn.classList.remove('busy'); btn.classList.add('ok');
+    onPos(pos, center);
+    if (!ME.watching) {
+      ME.watching = true;
+      try { ME.watchId = navigator.geolocation.watchPosition(p => onPos(p, false), () => {}, { enableHighAccuracy: true, maximumAge: 15000 }); } catch (_) {}
+    }
+  }, err => {
+    btn.classList.remove('busy');
+    toast(err && err.code === 1 ? t('loc.denied') : t('loc.fail'));
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+}
+
+/* =========================================================
+   MAP
+   ========================================================= */
+const svg = $('#map');
+svg.innerHTML = `
+  <defs>
+    <pattern id="waves" width="40" height="14" patternUnits="userSpaceOnUse"><path d="M0 7 Q10 2 20 7 T40 7" fill="none" stroke="rgba(120,190,255,.18)" stroke-width="1.2"/></pattern>
+    <radialGradient id="solGlow"><stop offset="0" stop-color="#FF5C8A" stop-opacity=".28"/><stop offset="1" stop-color="#FF5C8A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect x="-200" y="-200" width="800" height="1000" fill="#110E34"/>
+  <g opacity=".5" stroke="#1C1850" stroke-width="1">${Array.from({ length: 14 }, (_, i) => `<path d="M-200 ${-160 + i * 55} H600"/>`).join('')}${Array.from({ length: 14 }, (_, i) => `<path d="M${-180 + i * 60} -200 V500"/>`).join('')}</g>
+  <path d="M-200 476 Q0 462 200 478 T600 470 V800 H-200Z" fill="#3A335F"/>
+  <path d="M-200 524 Q0 508 200 522 T600 516 V800 H-200Z" fill="#10365A"/>
+  <path d="M-200 524 Q0 508 200 522 T600 516 V800 H-200Z" fill="url(#waves)"/>
+  <text class="sea-l" x="200" y="570" text-anchor="middle">Mar Mediterráneo</text>
+  <text class="zl" x="70" y="503" text-anchor="middle">PLAYA</text>
+  <path d="M42 40 H358 Q374 40 374 56 V468 H26 V56 Q26 40 42 40Z" fill="#1D1A4D" stroke="#34307A" stroke-width="1.5"/>
+  <g fill="#173A45">${[[40,230],[52,215],[30,252],[66,236],[42,360],[30,338],[58,372],[360,250],[352,232],[362,358]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9"/>`).join('')}</g>
+  <g fill="none" stroke="#2C2870" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 46 V462"/><path d="M90 240 H330"/><path d="M90 150 H330 V400 H90 Z"/><path d="M90 320 H40"/><path d="M330 320 H360"/>
+  </g>
+  <ellipse cx="200" cy="140" rx="112" ry="52" fill="url(#solGlow)"/>
+  <ellipse cx="200" cy="140" rx="100" ry="44" fill="rgba(255,92,138,.07)" stroke="rgba(255,92,138,.35)" stroke-dasharray="3 4"/>
+  <rect x="134" y="64" width="132" height="26" rx="6" fill="#3A1A4F" stroke="#FF5C8A" stroke-width="1.5"/>
+  <ellipse cx="102" cy="300" rx="44" ry="58" fill="rgba(156,140,255,.08)" stroke="rgba(156,140,255,.35)" stroke-dasharray="3 4"/>
+  <rect x="36" y="264" width="24" height="72" rx="6" fill="#2A2160" stroke="#9C8CFF" stroke-width="1.5"/>
+  <circle cx="318" cy="300" r="44" fill="rgba(46,196,182,.12)" stroke="#2EC4B6" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <rect x="96" y="398" width="220" height="46" rx="14" fill="rgba(255,197,61,.06)" stroke="rgba(255,197,61,.35)" stroke-dasharray="3 4"/>
+  <text class="zl" id="zoneFood" x="206" y="458" text-anchor="middle"></text>
+  <text class="zl" x="200" y="198" text-anchor="middle">PISTA SOL</text>
+  <text class="zl" x="200" y="252" text-anchor="middle">PLAZA</text>
+  <path id="route" d="" hidden/>
+  <g id="pins"></g>
+  <g id="people"></g>`;
+const routeEl = $('#route');
+
+const CHIPS = [['all', '#FFF6E5'], ['food', '#FFC53D'], ['wc', '#2EC4B6'], ['stage', '#FF5C8A'], ['water', '#5BB8FF'], ['friends', '#7BD389']];
+function renderChips() {
+  $('#chips').innerHTML = CHIPS.map(([k, c]) => `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}" style="--c:${c}"><i></i>${t('chip.' + k)}</button>`).join('');
+}
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if (!b) return;
+  filter = b.dataset.f; renderChips(); renderPins(); renderPeople();
+});
+
+function renderPins() {
+  $('#pins').innerHTML = PLACES.map(p => {
+    const ty = TYPES[p.type];
+    const vis = filter === 'all' || ty.group === filter;
+    const r = p.type === 'stage' ? 14 : 10.5;
+    const sc = p.type === 'stage' ? .78 : .6;
+    const queue = p.wait != null
+      ? `<g transform="translate(${r - 3} ${-r + 1})"><rect x="-1" y="-6.5" width="${p.wait > 9 ? 19 : 15}" height="11" rx="5.5" fill="${qColor(p.wait)}" stroke="#0F0D2E" stroke-width="1.5"/><text class="q" x="${p.wait > 9 ? 8.5 : 6.5}" y="2">${p.wait}'</text></g>` : '';
+    const label = p.label ? `<text class="pl" y="${r + 11}">${p.label}</text>` : (sel === p.id ? `<text class="pl" y="${r + 11}">${esc(p.name)}</text>` : '');
+    return `<g class="pin ${vis ? '' : 'dim'}" data-pin="${p.id}" transform="translate(${p.x} ${p.y})">
+      ${sel === p.id ? `<circle class="ring" r="${r + 5}"/>` : ''}
+      <circle r="${r}" fill="${ty.c}" stroke="#0F0D2E" stroke-width="2.5"/>
+      <g transform="scale(${sc}) translate(-12 -12)" fill="none" stroke="${ty.k}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${IC[p.icon || ty.icon]}</g>
+      ${queue}${label}</g>`;
+  }).join('');
+}
+function renderPeople() {
+  const dim = filter !== 'all' && filter !== 'friends';
+  let h = '';
+  if (meet) h += `<g transform="translate(${meet.x} ${meet.y})" style="pointer-events:none"><path d="M0 0V-24" stroke="#FFF6E5" stroke-width="2"/><path d="M0 -24H15l-3.5 5 3.5 5H0z" fill="#FFC53D" stroke="#0F0D2E" stroke-width="1"/><circle r="2.5" fill="#FFF6E5"/></g>`;
+  FRIENDS.forEach(id => {
+    const p = PEOPLE[id];
+    h += `<g class="person ${p.sharing ? '' : 'paused'} ${dim ? 'dim' : ''}" data-person="${id}" transform="translate(${p.x} ${p.y})">
+      ${sel === id ? '<circle class="ring" r="18"/>' : ''}
+      <circle r="12.5" fill="${p.c}" stroke="${p.sharing ? '#0F0D2E' : '#FFF6E5'}" stroke-width="${p.sharing ? 3 : 1.5}" ${p.sharing ? '' : 'stroke-dasharray="3 3"'}/>
+      <text class="ini" y="3">${p.ini}</text>
+      <text class="nm" y="24">${p.name}${p.sharing ? '' : ' · ' + p.last}</text></g>`;
+  });
+  if (ME.onsite) {
+    h += `<g class="person" data-person="me" transform="translate(${ME.x} ${ME.y})">
+      ${share.on && !reduce ? '<circle class="pulse" r="9" fill="#5BB8FF"/>' : ''}
+      <circle r="8" fill="${share.on ? '#5BB8FF' : '#A9A3D6'}" stroke="#FFF6E5" stroke-width="3"/></g>`;
+  }
+  $('#people').innerHTML = h;
+}
+function renderRoute() {
+  if (!route) { routeEl.hidden = true; return; }
+  const a = origin(), b = route.id in PEOPLE ? PEOPLE[route.id] : placeById(route.id);
+  const midY = Math.abs(a.y - 240) < Math.abs(a.y - b.y) ? 240 : b.y;
+  routeEl.setAttribute('d', `M${a.x} ${a.y} L200 ${a.y} L200 ${midY} L${b.x} ${midY} L${b.x} ${b.y}`);
+  routeEl.hidden = false;
+}
+function renderLegend() {
+  const live = !!festNow();
+  const lg = $('#legend'); lg.classList.toggle('live', live);
+  lg.querySelector('span').textContent = (live ? t('legend.live') : t('legend.typ')) + (offline.state === 'done' ? t('legend.off') : '');
+  $('#zoff').classList.toggle('ok', offline.state === 'done');
+}
+
+/* pan + zoom via viewBox */
+const vb = { x: 0, y: 0, w: 400, h: 600 };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function applyVB() {
+  vb.w = clamp(vb.w, 130, 420); vb.h = vb.w * 1.5;
+  vb.x = clamp(vb.x, -60, 460 - vb.w); vb.y = clamp(vb.y, -60, 640 - vb.h);
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+}
+function animateVB(target) {
+  const from = { ...vb }, t0 = performance.now(), dur = reduce ? 0 : 380;
+  const step = now => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = 1 - Math.pow(1 - k, 3);
+    vb.x = from.x + (target.x - from.x) * e; vb.y = from.y + (target.y - from.y) * e; vb.w = from.w + (target.w - from.w) * e;
+    applyVB(); if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function centerOn(x, y, w = vb.w, yShift = 0.12) { animateVB({ x: x - w / 2, y: y - w * 1.5 / 2 + w * 1.5 * yShift, w }); }
+function zoomBy(f) { const cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2, nw = clamp(vb.w * f, 130, 420); animateVB({ x: cx - nw / 2, y: cy - nw * 0.75, w: nw }); }
+$('#zin').onclick = () => zoomBy(.7);
+$('#zout').onclick = () => zoomBy(1.4);
+$('#zme').onclick = () => { if (ME.onsite) centerOn(ME.x, ME.y, 220, 0); else locate(true); };
+
+/* touch: one finger pans, two fingers pinch-zoom */
+function svgPt(cx, cy) { const p = svg.createSVGPoint(); p.x = cx; p.y = cy; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+const ptrs = new Map();
+let drag = null, pinch = null;
+svg.addEventListener('pointerdown', e => {
+  svg.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) drag = { x: e.clientX, y: e.clientY, vb: { ...vb }, moved: false, hit: e.target.closest('[data-pin],[data-person]') };
+  if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), vb: { ...vb }, mid: svgPt((a.x + b.x) / 2, (a.y + b.y) / 2) };
+    if (drag) drag.moved = true;
+  }
+});
+svg.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    const nw = clamp(pinch.vb.w * pinch.d / Math.max(d, 1), 130, 420), s = nw / pinch.vb.w;
+    vb.w = nw; vb.x = pinch.mid.x - (pinch.mid.x - pinch.vb.x) * s; vb.y = pinch.mid.y - (pinch.mid.y - pinch.vb.y) * s; applyVB();
+    return;
+  }
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+  drag.moved = true;
+  const r = svg.getBoundingClientRect(), k = Math.min(drag.vb.w / r.width, drag.vb.h / r.height);
+  vb.x = drag.vb.x - dx * k; vb.y = drag.vb.y - dy * k; applyVB();
+});
+function endPtr(e) {
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (ptrs.size > 0) { drag = null; return; }
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.moved || e.type === 'pointercancel') return;
+  if (meetMode) { placeMeet(svgPt(e.clientX, e.clientY)); return; }
+  if (d.hit && d.hit.dataset.pin) openPlace(d.hit.dataset.pin, true);
+  else if (d.hit && d.hit.dataset.person) openPerson(d.hit.dataset.person, true);
+  else closeSheet();
+}
+svg.addEventListener('pointerup', endPtr);
+svg.addEventListener('pointercancel', endPtr);
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const p = svgPt(e.clientX, e.clientY), f = e.deltaY > 0 ? 1.12 : 0.89, nw = clamp(vb.w * f, 130, 420), s = nw / vb.w;
+  vb.x = p.x - (p.x - vb.x) * s; vb.y = p.y - (p.y - vb.y) * s; vb.w = nw; applyVB();
+}, { passive: false });
+
+/* bottom sheet */
+const sheet = $('#sheet');
+function closeSheet() { sheet.classList.remove('open'); sheet.dataset.mode = ''; sel = null; renderPins(); renderPeople(); }
+function refreshSheet() {
+  if (!sheet.classList.contains('open')) return;
+  if (sheet.dataset.mode === 'offline') openOffline();
+  else if (sel) (sel in PEOPLE ? openPerson(sel) : openPlace(sel));
+}
+function stageNowNext(stageId) {
+  const fn = festNow();
+  if (fn) {
+    const list = setsFor(fn.day).filter(s => s.stage.id === stageId).sort((a, b) => a.start - b.start);
+    return { now: list.find(s => s.start <= fn.min && fn.min < s.end), next: list.find(s => s.start > fn.min), live: true };
+  }
+  if (Date.now() < FEST_START) return { first: setsFor('fri').filter(s => s.stage.id === stageId).sort((a, b) => a.start - b.start)[0] };
+  return {};
+}
+function distLabel(type, target) { const m = dist(origin(), target); return ME.onsite ? t('away', { t: type, m }) : t('fromgate', { t: type, m }); }
+function walkBlock(target) {
+  if (!route || route.id !== target.id) return '';
+  const m = dist(origin(), target);
+  return `<div class="walk">${svgI('route', 'width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"')}${ME.onsite ? t('route.on') : t('route.gate')}<span>${t('walkm', { m, w: walk(m) })}</span></div>`;
+}
+function sheetHead(c, k, icon, title, sub) {
+  return `<div class="grab"></div><div class="sh-h"><span class="sh-ic" style="--c:${c};--k:${k}">${svgI(icon)}</span><div><h3>${esc(title)}</h3><small>${sub}</small></div><button class="x" data-act="close" aria-label="${t('close')}">${svgI('x')}</button></div>`;
+}
+function openPlace(id, center) {
+  const p = placeById(id), ty = TYPES[p.type];
+  sel = id; sheet.dataset.mode = ''; renderPins(); renderPeople();
+  let body = '';
+  if (p.type === 'stage') {
+    const st = stageNowNext(p.stage);
+    let np;
+    if (st.live) np = (st.now ? `<span class="live">${t('livenow')}</span><b>${esc(st.now.name)}</b><span class="mono">${t('fromto', { a: st.now.a, b: st.now.b })} · ${st.now.genre}</span>` : `<span class="mono">${t('changeover')}</span>`)
+      + (st.next ? `<span class="mono" style="color:var(--a-ink)">${t('next', { a: st.next.a, n: esc(st.next.name) })}</span>` : '');
+    else if (st.first) np = `<span class="mono" style="color:var(--a-ink)">${t('firstset', { d: t('day.fri'), a: st.first.a, n: esc(st.first.name) })}</span>`;
+    body = (np ? `<div class="np">${np}</div>` : '') + `<p class="sh-p">${L(p.desc)}</p>`;
+  } else if (p.type === 'food' || p.type === 'bar') {
+    body = `<div class="pills"><span class="pill ${qClass(p.wait)}">${t('queue', { w: p.wait })}</span><span class="pill">${t('until.c', { x: p.close })}</span><span class="pill">${t('cashless')}</span></div>
+      <ul class="menu">${p.menu.map(([n, pr]) => `<li><span>${n}</span><span>${pr}</span></li>`).join('')}</ul>`;
+  } else if (p.type === 'wc') {
+    const alt = PLACES.filter(x => x.type === 'wc' && x.id !== p.id).sort((a, b) => a.wait - b.wait)[0];
+    body = `<div class="pills"><span class="pill ${qClass(p.wait)}">${t('queue', { w: p.wait })}</span><span class="pill">${t('cabins', { n: p.stalls })}</span>${p.accessible ? `<span class="pill good">${t('acc')}</span>` : `<span class="pill">${t('noacc')}</span>`}</div>
+      <p class="sh-p">${p.wait > 8 ? t('shorter', { x: alt.name }) : t('restocked')}</p>`;
+  } else {
+    body = `<p class="sh-p">${L(p.desc)}</p>`;
+  }
+  sheet.innerHTML = sheetHead(ty.c, ty.k, p.icon || ty.icon, p.name, distLabel(t('type.' + p.type), p)) + body + walkBlock(p) +
+    `<div class="acts"><button class="btn pri" data-act="route" data-id="${p.id}">${svgI('route')}${t('take')}</button>` +
+    (p.type === 'stage' ? `<button class="btn" data-act="lineup">${svgI('list')}${t('lineupBtn')}</button>` : `<button class="btn" data-act="share" data-id="${p.id}">${svgI('share')}${t('sendgroup')}</button>`) + `</div>`;
+  sheet.classList.add('open');
+  if (center) centerOn(p.x, p.y, Math.min(vb.w, 300));
+}
+function openPerson(id, center) {
+  sel = id; sheet.dataset.mode = ''; renderPins(); renderPeople();
+  if (id === 'me') {
+    sheet.innerHTML = sheetHead('#5BB8FF', '#0F0D2E', 'pin', t('you.here'), t('near', { x: esc(nearestPlace(ME).name) })) +
+      `<p class="sh-p">${share.on ? t('you.share', { x: shareText() }) : t('you.off')}</p>
+      <div class="acts"><button class="btn pri" data-act="friends">${svgI('pin')}${t('share.settings')}</button></div>`;
+    sheet.classList.add('open');
+    if (center) centerOn(ME.x, ME.y, Math.min(vb.w, 300));
+    return;
+  }
+  const p = PEOPLE[id], m = dist(origin(), p);
+  sheet.innerHTML = sheetHead(p.c, '#0F0D2E', 'pin', p.name, p.sharing ? t('upd', { s: L(p.status), n: p.upd }) : t('paused.last', { x: p.last })) +
+    `<div class="pills"><span class="pill">${ME.onsite ? t('maway', { m }) : t('mgate', { m })}</span><span class="pill">${t('minwalk', { w: walk(m) })}</span><span class="pill">${t('near', { x: esc(nearestPlace(p).name) })}</span></div>` + walkBlock({ ...p, id }) +
+    `<div class="acts"><button class="btn pri" data-act="route" data-id="${id}">${svgI('route')}${t('walkto', { n: p.name })}</button><button class="btn" data-act="ping" data-id="${id}">${svgI('wave')}${t('ping')}</button></div>`;
+  sheet.classList.add('open');
+  if (center) centerOn(p.x, p.y, Math.min(vb.w, 300));
+}
+sheet.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, id = b.dataset.id;
+  if (act === 'close') closeSheet();
+  if (act === 'dl') startDownload();
+  if (act === 'dl-del') removeDownload();
+  if (act === 'lineup') { day = (festNow() || {}).day || day; luMode = 'grid'; go('lineup'); }
+  if (act === 'friends') go('friends');
+  if (act === 'share') toast(t('t.sent', { p: placeById(id).name, g: GROUP }));
+  if (act === 'ping') toast(t('t.pinged', { n: PEOPLE[id].name }));
+  if (act === 'route') {
+    route = { id }; renderRoute();
+    const tgt = PEOPLE[id] || placeById(id), a = origin();
+    const w = clamp(Math.max(Math.abs(tgt.x - a.x) * 1.5, Math.abs(tgt.y - a.y) * 1.1, 180), 180, 420);
+    centerOn((a.x + tgt.x) / 2, (a.y + tgt.y) / 2, w, 0.1);
+    id in PEOPLE ? openPerson(id) : openPlace(id);
+  }
+});
+
+/* offline map: stores the app in the phone's cache so it opens with no signal */
+const OFFLINE_CACHE = 'festigo-offline';
+const OFFLINE_FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700;800&display=swap';
+const offline = (() => { const s = store.get('offline', null); return s ? { state: 'done', at: s.at, pct: 0 } : { state: 'none', at: 0, pct: 0 }; })();
+const canCache = () => 'caches' in window && /^https?:$/.test(location.protocol);
+function openOffline() {
+  sel = null; renderPins(); renderPeople(); sheet.dataset.mode = 'offline';
+  let body;
+  if (offline.state === 'done') {
+    body = `<div class="pills"><span class="pill good">${t('off.saved')}</span><span class="pill">${t('off.updated', { x: fmtClock(new Date(offline.at)) })}</span></div>
+      <p class="sh-p">${t('off.doneP')}</p>
+      <div class="acts"><button class="btn pri" data-act="dl">${svgI('download')}${t('off.update')}</button><button class="btn" data-act="dl-del">${t('off.remove')}</button></div>`;
+  } else if (offline.state === 'loading') {
+    const p = Math.min(100, Math.floor(offline.pct));
+    body = `<div class="prog" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="width:${p}%"></i></div>
+      <p class="sh-p" style="font-family:var(--f-mono)">${t('off.dl', { p })}</p>`;
+  } else {
+    body = `<p class="sh-p">${t('off.intro')}</p>
+      <ul class="menu"><li><span>${t('off.i1')}</span><span>✓</span></li><li><span>${t('off.i2')}</span><span>✓</span></li></ul>
+      <div class="acts"><button class="btn pri" data-act="dl">${svgI('download')}${t('off.btn')}</button></div>`;
+  }
+  sheet.innerHTML = sheetHead('#5BB8FF', '#0F0D2E', 'download', t('off.title'), 'Brisa Fest · Marina Sur') + body;
+  sheet.classList.add('open');
+}
+async function startDownload() {
+  if (offline.state === 'loading') return;
+  offline.state = 'loading'; offline.pct = 0; openOffline();
+  const anim = setInterval(() => { offline.pct = Math.min(94, offline.pct + 6 + Math.random() * 10); if (sheet.dataset.mode === 'offline') openOffline(); }, 160);
+  try {
+    if (canCache()) {
+      const c = await caches.open(OFFLINE_CACHE);
+      await Promise.all(OFFLINE_FILES.map(u => c.add(u).catch(() => {})));
+      try { const fr = await fetch(FONT_CSS, { mode: 'no-cors' }); await c.put(FONT_CSS, fr); } catch (_) {}
+      if (!(await c.match('./index.html')) && !(await c.match('./'))) throw new Error('not cached');
+    }
+    await wait(700);
+    offline.state = 'done'; offline.at = Date.now(); store.set('offline', { at: offline.at });
+    toast(t('off.okT'));
+  } catch (_) {
+    offline.state = 'none'; toast(t('off.failT'));
+  } finally {
+    clearInterval(anim); renderLegend();
+    if (sheet.classList.contains('open') && sheet.dataset.mode === 'offline') openOffline();
+  }
+}
+async function removeDownload() {
+  try { if ('caches' in window) await caches.delete(OFFLINE_CACHE); } catch (_) {}
+  offline.state = 'none'; store.set('offline', null); renderLegend(); openOffline(); toast(t('off.removedT'));
+}
+$('#zoff').onclick = openOffline;
+
+/* meeting point */
+function startMeet() { go('map'); closeSheet(); meetMode = true; $('#meetBar').hidden = false; $('#legend').hidden = true; centerOn(200, 300, 420, 0); }
+function endMeet() { meetMode = false; $('#meetBar').hidden = true; $('#legend').hidden = false; }
+$('#meetCancel').addEventListener('click', e => { e.stopPropagation(); endMeet(); });
+function placeMeet(p) {
+  const near = nearestPlace(p);
+  const d = new Date(Date.now() + 20 * 60000);
+  meet = { x: Math.round(p.x), y: Math.round(p.y), name: near.name, time: fmtClock(d) };
+  store.set('meet', meet);
+  endMeet(); renderPeople();
+  toast(t('t.meet', { p: near.name, g: GROUP }));
+}
+
+/* =========================================================
+   LINEUP
+   ========================================================= */
+const PX = 1.1, G0 = 18 * 60, G1 = 30 * 60;  // 18:00 to 06:00
+function clashesFor(set) {
+  if (!favs.has(set.id)) return [];
+  return ALLSETS.filter(s => s.id !== set.id && s.day === set.day && favs.has(s.id) && s.start < set.end && set.start < s.end);
+}
+function renderLineup() {
+  $$('#days button').forEach(b => b.classList.toggle('on', b.dataset.day === day));
+  $$('#mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === luMode));
+  const sets = setsFor(day), fn = festNow(), isLive = !!fn && fn.day === day, n = isLive ? fn.min : 0;
+  $('#planN').textContent = sets.filter(s => favs.has(s.id)).length;
+  const head = $('#ttHead');
+  head.hidden = luMode !== 'grid';
+  head.innerHTML = '<span></span>' + STAGES.map(s => `<div style="--c:${s.c}">${s.short}</div>`).join('');
+
+  let html = '';
+  if (isLive) {
+    const live = sets.filter(s => s.start <= n && n < s.end);
+    html += `<div class="live-strip"><span class="live">${t('onstage')}</span>${live.length ? live.map(s => `<div><b>${esc(s.name)}</b><span class="st" style="color:${s.stage.c}">${s.stage.short} · ${t('until.l', { x: s.b })}</span></div>`).join('') : `<div>${t('allchange')}</div>`}</div>`;
+  }
+  if (luMode === 'grid') {
+    let hours = '', cols = '';
+    for (let m = G0; m <= G1; m += 60) hours += `<div class="hr" style="top:${(m - G0) * PX}px"><span>${pad((m / 60) % 24)}</span></div>`;
+    STAGES.forEach((st, i) => {
+      cols += `<div class="col" style="grid-column:${i + 2}">` + sets.filter(s => s.stage.id === st.id).map(s => {
+        const fav = favs.has(s.id), clash = clashesFor(s).length > 0;
+        const live = isLive && s.start <= n && n < s.end, past = isLive && s.end <= n;
+        return `<button class="set ${fav ? 'fav' : ''} ${clash ? 'clash' : ''} ${past ? 'past' : ''}" data-set="${s.id}" style="--c:${st.c}; top:${(s.start - G0) * PX + 1}px; height:${(s.end - s.start) * PX - 3}px" aria-pressed="${fav}">
+          <svg class="star" viewBox="0 0 24 24">${IC.star}</svg>
+          ${live ? `<span class="lv">${S.lang === 'es' ? 'EN VIVO' : 'LIVE'}</span>` : ''}<span class="tm">${s.a}–${s.b}</span><span class="an">${esc(s.name)}</span><span class="gn">${s.genre}</span></button>`;
+      }).join('') + '</div>';
+    });
+    const now = isLive && n >= G0 && n <= G1 ? `<div class="nowline" data-t="${fmt(n)}" style="top:${(n - G0) * PX}px"></div>` : '';
+    html += `<div class="tt-body" style="height:${(G1 - G0) * PX + 10}px">${hours}<div class="col" style="grid-column:1"></div>${cols}${now}</div>`;
+  } else {
+    const mine = sets.filter(s => favs.has(s.id)).sort((a, b) => a.start - b.start);
+    html += mine.length ? `<div class="plan">${mine.map(s => {
+      const cl = clashesFor(s);
+      return `<div class="prow"><div class="t"><b>${s.a}</b>${s.b}</div>
+        <div class="n"><b>${esc(s.name)}</b><span class="stg" style="--c:${s.stage.c}">${s.stage.name}</span> <span>· ${s.genre}</span>
+        ${cl.length ? `<span class="warn">${t('clashes', { x: cl.map(c => esc(c.name)).join(', ') })}</span>` : ''}</div>
+        <button data-set="${s.id}" aria-label="${esc(t('remove.aria', { n: s.name }))}"><svg viewBox="0 0 24 24">${IC.star}</svg></button></div>`;
+    }).join('')}</div>` : `<div class="empty"><b>${t('plan.empty.t', { d: t('dayfull.' + day) })}</b>${t('plan.empty.p')}</div>`;
+  }
+  $('#ttWrap').innerHTML = html;
+}
+function scrollToNow() {
+  const v = $('[data-view="lineup"]'), fn = festNow();
+  requestAnimationFrame(() => { v.scrollTop = fn && fn.day === day ? Math.max(0, (fn.min - G0) * PX - 40) : 0; });
+}
+$('#days').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; day = b.dataset.day; renderLineup(); scrollToNow(); });
+$('#mode').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (!b) return; luMode = b.dataset.mode; renderLineup(); });
+$('#ttWrap').addEventListener('click', e => {
+  const b = e.target.closest('[data-set]'); if (!b) return;
+  const id = b.dataset.set, s = ALLSETS.find(x => x.id === id);
+  if (favs.has(id)) { favs.delete(id); toast(t('t.removed', { n: s.name })); }
+  else {
+    favs.add(id);
+    const cl = clashesFor(s);
+    toast(cl.length ? t('t.addclash', { x: cl[0].name }) : S.reminders ? t('t.addrem', { n: s.name, x: fmt(s.start - 15) }) : t('t.add', { n: s.name }));
+  }
+  saveFavs(); renderLineup();
+});
+
+/* set reminders while the app is open */
+const reminded = new Set(store.get('reminded', []));
+function checkReminders() {
+  if (!S.reminders) return;
+  const fn = festNow(); if (!fn) return;
+  setsFor(fn.day).forEach(s => {
+    if (!favs.has(s.id) || reminded.has(s.id)) return;
+    const until = s.start - fn.min;
+    if (until <= 15 && until > 0) {
+      reminded.add(s.id); store.set('reminded', [...reminded]);
+      const msg = `${s.name} · ${s.stage.name} · ${s.a}`;
+      toast(msg); systemNotify('FestiGo', msg);
+    }
+  });
+}
+
+/* =========================================================
+   FRIENDS
+   ========================================================= */
+function shareText() {
+  if (share.mode === '1h') return share.until || fmtClock(new Date(Date.now() + 36e5));
+  if (share.mode === 'night') return '06:00';
+  return t('sun.close');
+}
+const saveShare = () => store.set('share', share);
+const appURL = () => EMBED ? SHARE_URL : /^https?:$/.test(location.protocol) ? location.origin + location.pathname.replace(/index\.html$/, '') : null;
+function renderFriends() {
+  const rows = FRIENDS.map(id => {
+    const p = PEOPLE[id], m = dist(origin(), p);
+    return `<div class="frow"><span class="av ${p.sharing ? '' : 'off'}" style="--c:${p.c}">${p.ini}${p.sharing ? '<i class="on"></i>' : ''}</span>
+      <div><b>${p.name}</b><small>${p.sharing ? `${L(p.status)} · <span class="m">${ME.onsite ? m + ' m' : esc(nearestPlace(p).name)}</span>` : t('paused.full', { x: p.last, p: esc(nearestPlace(p).name) })}</small></div>
+      <button class="ib" data-f-act="find" data-id="${id}" aria-label="${t('find.aria', { n: p.name })}">${svgI('pin')}</button>
+      <button class="ib" data-f-act="ping" data-id="${id}" aria-label="${t('ping.aria', { n: p.name })}">${svgI('wave')}</button></div>`;
+  }).join('');
+  const url = appURL();
+  $('#friendsPad').innerHTML = `
+    <div class="card">
+      <div class="row"><span class="av" style="--c:#5BB8FF">TÚ</span><div class="grow"><b>${t('sh.title')}</b><small>${share.on ? t('sh.on', { g: GROUP, x: shareText() }) : t('sh.off')}</small></div>
+        <button class="sw" role="switch" id="shareSw" aria-checked="${share.on}" aria-label="${t('sh.title')}"></button></div>
+      <div class="dur">${['1h', 'night', 'weekend'].map(k => `<button data-dur="${k}" class="${share.mode === k && share.on ? 'on' : ''}" ${share.on ? '' : 'disabled'}>${t('dur.' + k)}</button>`).join('')}</div>
+    </div>
+    <div class="card meetc">
+      <div class="row"><span class="sh-ic" style="--c:#FFC53D;--k:#0F0D2E">${svgI('flag')}</span>
+        <div><b>${meet ? t('meet.t', { p: esc(meet.name) }) : t('meet.none')}</b><small>${meet ? t('meet.s', { t: meet.time }) : t('meet.none.s')}</small></div></div>
+      <div class="acts" style="margin-top:0"><button class="btn pri" data-f-act="meet">${svgI('pin')}${meet ? t('meet.move') : t('meet.set')}</button><button class="btn" data-f-act="meetmap">${svgI('route')}${t('meet.show')}</button></div>
+    </div>
+    <div class="gl">${t('grp.count', { g: GROUP, a: FRIENDS.filter(id => PEOPLE[id].sharing).length, b: FRIENDS.length })}</div>
+    ${rows}
+    <div class="gl">${t('inv.h')}</div>
+    <div class="card">
+      <div class="row"><span class="sh-ic" style="--c:#5BB8FF;--k:#0F0D2E">${svgI('share')}</span>
+        <div><b>${t('inv.t')}</b><small>${t('inv.s', { g: GROUP })}</small></div></div>
+      <div class="code"><span>${url ? esc(url.replace(/^https?:\/\//, '')) : t('inv.local')}</span><button data-f-act="invite">${t('inv.btn')}</button></div>
+    </div>`;
+}
+$('#friendsPad').addEventListener('click', async e => {
+  const sw = e.target.closest('#shareSw');
+  if (sw) { share.on = !share.on; saveShare(); renderFriends(); renderPeople(); toast(share.on ? t('t.shon', { g: GROUP, x: shareText() }) : t('t.shoff')); return; }
+  const d = e.target.closest('[data-dur]');
+  if (d && !d.disabled) { share.mode = d.dataset.dur; share.until = share.mode === '1h' ? fmtClock(new Date(Date.now() + 36e5)) : null; saveShare(); renderFriends(); toast(t('t.shuntil', { x: shareText() })); return; }
+  const b = e.target.closest('[data-f-act]'); if (!b) return;
+  const act = b.dataset.fAct, id = b.dataset.id;
+  if (act === 'find') { go('map'); openPerson(id, true); }
+  if (act === 'ping') toast(t('t.pinged', { n: PEOPLE[id].name }));
+  if (act === 'meet') startMeet();
+  if (act === 'meetmap') { go('map'); closeSheet(); centerOn(meet.x, meet.y, 240, 0); }
+  if (act === 'invite') {
+    const url = appURL();
+    if (!url) { toast(t('inv.local')); return; }
+    const link = EMBED ? url : url + '?join=malva-rosa', text = t('inv.text', { g: GROUP });
+    if (navigator.share && !EMBED) {
+      try { await navigator.share({ title: 'FestiGo', text, url: link }); return; }
+      catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(link); toast(t('inv.copied')); } catch (_) { toast(link); }
+  }
+});
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (view === 'settings') renderSettings(); });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+function renderSettings() {
+  const chev = svgI('chev', 'class="chev"');
+  const notifBlocked = 'Notification' in window && Notification.permission === 'denied';
+  let install;
+  if (isStandalone()) install = `<div class="row"><span class="sh-ic sm" style="--c:#7BD389;--k:#0F0D2E">${svgI('phone')}</span><div class="grow"><b>${t('set.installed')}</b></div></div>`;
+  else if (installEvt) install = `<button class="row link" data-s-act="install"><span class="sh-ic sm" style="--c:#FFC53D;--k:#0F0D2E">${svgI('phone')}</span><div class="grow"><b>${t('set.install')}</b><small>${t('set.install.s')}</small></div>${chev}</button>`;
+  else install = `<div class="row"><span class="sh-ic sm" style="--c:#FFC53D;--k:#0F0D2E">${svgI('phone')}</span><div class="grow"><b>${t('set.install')}</b><small>${isIOS() ? t('set.install.ios') : t('set.install.other')}</small></div></div>`;
+  $('#settingsPad').innerHTML = `
+    <div class="gl">${t('set.lang')}</div>
+    <div class="card">
+      <div class="langs" role="radiogroup" aria-label="${t('set.lang')}">${[['en', 'English', 'EN'], ['es', 'Español', 'ES']].map(([k, l, c]) =>
+        `<button data-lang="${k}" role="radio" aria-checked="${S.lang === k}" class="${S.lang === k ? 'on' : ''}" lang="${k}"><span class="lc">${c}</span>${l}</button>`).join('')}</div>
+      <small class="hintx">${t('set.lang.s')}</small>
+    </div>
+    <div class="gl">${t('set.notif')}</div>
+    <div class="card">
+      <div class="row"><div class="grow"><b>${t('set.mom')}</b><small>${t('set.mom.s')}</small></div><button class="sw" role="switch" data-s-key="momAlerts" aria-checked="${S.momAlerts}" aria-label="${t('set.mom')}"></button></div>
+      <div class="row"><div class="grow"><b>${t('set.rem')}</b><small>${t('set.rem.s')}</small></div><button class="sw" role="switch" data-s-key="reminders" aria-checked="${S.reminders}" aria-label="${t('set.rem')}"></button></div>
+      ${notifBlocked ? `<small class="hintx">${t('set.notifBlocked')}</small>` : ''}
+    </div>
+    <div class="gl">${t('set.more')}</div>
+    <div class="card">
+      <button class="row link" data-s-act="loc"><div class="grow"><b>${t('set.loc')}</b><small>${share.on ? t('sh.on', { g: GROUP, x: shareText() }) : t('sh.off')}</small></div>${chev}</button>
+      ${EMBED ? '' : `<button class="row link" data-s-act="off"><div class="grow"><b>${t('off.title')}</b><small>${offline.state === 'done' ? t('set.off.saved') : t('set.off.none')}</small></div>${chev}</button>`}
+    </div>
+    <div class="gl">${t('set.app')}</div>
+    <div class="card">
+      ${EMBED ? '' : install}
+      <button class="row link" data-s-act="welcome"><div class="grow"><b>${t('set.welcome')}</b></div>${chev}</button>
+    </div>
+    <p class="about">${t('set.data')}<br>FestiGo 1.0 · Brisa Fest 2027 · Marina Sur, València</p>`;
+}
+function setLang(l, quiet) {
+  if (S.lang === l) return;
+  S.lang = l; saveS();
+  applyStatic(); renderChips(); renderPins(); renderLegend(); setHeader();
+  $('#zoneFood').textContent = t('zone.food');
+  refreshSheet();
+  if (view === 'home') renderHome();
+  if (view === 'settings') renderSettings();
+  if (view === 'lineup') renderLineup();
+  if (view === 'friends') renderFriends();
+  if (view === 'momento') renderMomento();
+  if (!quiet) toast(t('t.lang'));
+}
+$('#settingsPad').addEventListener('click', async e => {
+  const lb = e.target.closest('[data-lang]');
+  if (lb) { setLang(lb.dataset.lang); return; }
+  const sw = e.target.closest('[data-s-key]');
+  if (sw) {
+    const k = sw.dataset.sKey; S[k] = !S[k]; saveS();
+    if (S[k] && 'Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (_) {} }
+    renderSettings();
+    toast(k === 'momAlerts' ? t(S[k] ? 't.momOn' : 't.momOff') : t(S[k] ? 't.remOn' : 't.remOff'));
+    return;
+  }
+  const a = e.target.closest('[data-s-act]'); if (!a) return;
+  const act = a.dataset.sAct;
+  if (act === 'loc') go('friends');
+  if (act === 'off') { go('map'); openOffline(); }
+  if (act === 'welcome') showWelcome();
+  if (act === 'install' && installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch (_) {} installEvt = null; renderSettings(); }
+});
+
+/* =========================================================
+   NOTIFICATIONS
+   ========================================================= */
+function systemNotify(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted' || !document.hidden) return;
+  const opts = { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'festigo' };
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(r => r.showNotification(title, opts)).catch(() => {});
+  else { try { new Notification(title, opts); } catch (_) {} }
+}
+function showBanner() {
+  const n = $('#notif'); n.classList.add('show'); clearTimeout(n._t); n._t = setTimeout(() => n.classList.remove('show'), 8000);
+}
+$('#notif').addEventListener('click', () => { $('#notif').classList.remove('show'); go('momento'); openCam(); });
+
+/* =========================================================
+   MOMENTO
+   ========================================================= */
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+/* The drop time is the same for everyone on a given day: a surprise time between 09:00 and 21:00. */
+function dropFor(key) {
+  const r = rng(hashStr('momento|' + key)), mins = 9 * 60 + Math.floor(r() * 12 * 60);
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d, Math.floor(mins / 60), mins % 60).getTime();
+}
+let POSTS = store.get('posts', {});
+function momState() {
+  const key = dayKey(), drop = dropFor(key), now = Date.now();
+  return { key, drop, active: now >= drop, left: 120 - (now - drop) / 1000, posted: POSTS[key] || null };
+}
+function mmss(s) { const a = Math.abs(Math.floor(s)); return pad(Math.floor(a / 60)) + ':' + pad(a % 60); }
+
+/* friends' photos: drawn in the app (no network needed) */
+function circle(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+function paintScene(ctx, w, h, kind, tm, seed) {
+  const r = rng(seed || 1);
+  ctx.save();
+  if (kind === 'food') { paintPaella(ctx, w, h, r); ctx.restore(); return; }
+  if (kind === 'beach') { paintBeach(ctx, w, h, r, tm); ctx.restore(); return; }
+  const tent = kind === 'tent';
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  if (tent) { g.addColorStop(0, '#03121B'); g.addColorStop(.55, '#08404A'); g.addColorStop(1, '#1FA89C'); }
+  else { g.addColorStop(0, '#160C38'); g.addColorStop(.55, '#5B1870'); g.addColorStop(1, '#FF5C8A'); }
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  const rg = ctx.createRadialGradient(w / 2, h * .48, 4, w / 2, h * .48, w * .7);
+  rg.addColorStop(0, tent ? 'rgba(120,255,220,.35)' : 'rgba(255,205,130,.38)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'lighter';
+  const n = tent ? 12 : 7, oy = h * .5;
+  for (let i = 0; i < n; i++) {
+    const ox = tent ? w / 2 : w * (.14 + .72 * i / (n - 1));
+    const base = tent ? -Math.PI / 2 + (i / (n - 1) - .5) * 2.6 : -Math.PI / 2;
+    const ang = base + Math.sin(tm * (tent ? 1.6 : .9) + i * 1.7) * (tent ? .22 : .45);
+    const len = h * 1.1, sp = tent ? .01 : .07;
+    ctx.fillStyle = tent ? (i % 2 ? 'rgba(60,255,190,.5)' : 'rgba(120,190,255,.45)') : (i % 2 ? 'rgba(255,205,90,.22)' : 'rgba(255,120,170,.24)');
+    ctx.beginPath(); ctx.moveTo(ox, oy);
+    ctx.lineTo(ox + Math.cos(ang - sp) * len, oy + Math.sin(ang - sp) * len);
+    ctx.lineTo(ox + Math.cos(ang + sp) * len, oy + Math.sin(ang + sp) * len);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  const dark = '#0A0720';
+  ctx.fillStyle = dark;
+  if (!tent) {
+    ctx.fillRect(w * .06, h * .18, w * .025, h * .38); ctx.fillRect(w * .915, h * .18, w * .025, h * .38); ctx.fillRect(w * .06, h * .18, w * .88, h * .022);
+    ctx.fillRect(w * .1, h * .3, w * .07, h * .2); ctx.fillRect(w * .83, h * .3, w * .07, h * .2);
+    circle(ctx, w * .5, h * .44, w * .022); ctx.fillRect(w * .484, h * .46, w * .032, h * .07);
+    ctx.fillRect(w * .04, h * .53, w * .92, h * .03);
+  } else {
+    ctx.fillRect(w * .3, h * .49, w * .4, h * .06); circle(ctx, w * .5, h * .455, w * .026);
+  }
+  for (let row = 0; row < 4; row++) {
+    const y = h * (.66 + row * .1), s = w * (.026 + row * .012), col = row === 3 ? '#04020D' : dark;
+    let x = -s + r() * s;
+    while (x < w + s) {
+      ctx.fillStyle = col; circle(ctx, x, y, s);
+      ctx.beginPath(); ctx.ellipse(x, y + s * 2.4, s * 1.9, s * 1.8, 0, 0, Math.PI * 2); ctx.fill();
+      if (r() < .24) {
+        const ax = x + (r() < .5 ? -1 : 1) * s * 1.2, tx = ax + (r() - .5) * s * 1.4, ty = y - s * 2.6;
+        ctx.strokeStyle = col; ctx.lineWidth = s * .55; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(ax, y + s * 1.4); ctx.lineTo(tx, ty); ctx.stroke();
+        if (r() < .5) { ctx.fillStyle = 'rgba(255,255,240,.95)'; ctx.fillRect(tx - s * .3, ty - s * 1.1, s * .6, s * .9); }
+      }
+      x += s * (2.1 + r() * .9);
+    }
+  }
+  ctx.restore();
+}
+function paintPaella(ctx, w, h, r) {
+  ctx.fillStyle = '#6A3B1F'; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 16; i++) {
+    ctx.strokeStyle = `rgba(40,20,8,${.15 + r() * .2})`; ctx.lineWidth = 1 + r() * 2;
+    const y = r() * h; ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(w * .3, y + (r() - .5) * 20, w * .7, y + (r() - .5) * 20, w, y + (r() - .5) * 10); ctx.stroke();
+  }
+  const cx = w * .5, cy = h * .5, R = w * .4;
+  ctx.fillStyle = '#26262C';
+  ctx.beginPath(); ctx.ellipse(cx - R - 10, cy, 18, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + R + 10, cy, 18, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3A3A42'; circle(ctx, cx, cy, R + 9);
+  ctx.fillStyle = '#1B1B20'; circle(ctx, cx, cy, R + 3);
+  const rice = ctx.createRadialGradient(cx, cy, R * .1, cx, cy, R);
+  rice.addColorStop(0, '#F7CB4E'); rice.addColorStop(.8, '#E0962A'); rice.addColorStop(1, '#9C5A14');
+  ctx.fillStyle = rice; circle(ctx, cx, cy, R);
+  for (let i = 0; i < 900; i++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * R * .97;
+    ctx.fillStyle = `rgba(255,236,160,${.35 + r() * .4})`;
+    ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 1.8, 1, r() * 3, 0, Math.PI * 2); ctx.fill();
+  }
+  const piece = (color, pw, ph, count) => {
+    for (let i = 0; i < count; i++) {
+      const a = r() * Math.PI * 2, d = Math.sqrt(r()) * R * .82;
+      ctx.save(); ctx.translate(cx + Math.cos(a) * d, cy + Math.sin(a) * d); ctx.rotate(r() * Math.PI);
+      ctx.fillStyle = color; ctx.fillRect(-pw / 2, -ph / 2, pw, ph); ctx.restore();
+    }
+  };
+  piece('#C92E25', w * .08, w * .018, 10);
+  piece('#4F8F34', w * .06, w * .014, 16);
+  for (let i = 0; i < 9; i++) { const a = r() * 6.28, d = Math.sqrt(r()) * R * .75; ctx.fillStyle = '#E8B77A'; ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d, w * .035, w * .026, r() * 3, 0, 6.28); ctx.fill(); }
+  [[.7, .4], [-2.3, .5]].forEach(([a, s]) => {
+    const x = cx + Math.cos(a) * R * .7, y = cy + Math.sin(a) * R * .7;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(a + Math.PI / 2);
+    ctx.fillStyle = '#F2D23C'; ctx.beginPath(); ctx.arc(0, 0, w * .07 * s * 2, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#FFF1A0'; ctx.beginPath(); ctx.arc(0, 0, w * .055 * s * 2, 0, Math.PI); ctx.fill(); ctx.restore();
+  });
+}
+function paintBeach(ctx, w, h, r, tm) {
+  const sky = ctx.createLinearGradient(0, 0, 0, h * .56);
+  sky.addColorStop(0, '#0B1440'); sky.addColorStop(1, '#3B2470');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h * .56);
+  for (let i = 0; i < 60; i++) { ctx.fillStyle = `rgba(255,255,255,${.3 + r() * .6})`; ctx.fillRect(r() * w, r() * h * .45, 1.4, 1.4); }
+  const mx = w * .74, my = h * .17, mr = w * .065;
+  const glow = ctx.createRadialGradient(mx, my, mr, mx, my, mr * 4); glow.addColorStop(0, 'rgba(255,241,194,.35)'); glow.addColorStop(1, 'rgba(255,241,194,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h * .56);
+  ctx.fillStyle = '#FFF1C2'; circle(ctx, mx, my, mr);
+  const cols = ['#FFC53D', '#FF5C8A', '#2EC4B6', '#5BB8FF'];
+  for (let i = 0; i <= 18; i++) {
+    const k = i / 18, x = k * w, y = h * .08 + Math.sin(k * Math.PI) * h * .1 + k * h * .04;
+    ctx.fillStyle = cols[i % 4]; ctx.globalAlpha = .9; circle(ctx, x, y, 3.2); ctx.globalAlpha = .25; circle(ctx, x, y, 8); ctx.globalAlpha = 1;
+  }
+  const sea = ctx.createLinearGradient(0, h * .56, 0, h * .76);
+  sea.addColorStop(0, '#1A3570'); sea.addColorStop(1, '#0A1736');
+  ctx.fillStyle = sea; ctx.fillRect(0, h * .56, w, h * .2);
+  for (let i = 0; i < 16; i++) {
+    const y = h * (.57 + i * .011), ww = w * (.04 + r() * .1) * (1 + i * .05);
+    ctx.fillStyle = `rgba(255,233,168,${.55 - i * .025})`; ctx.fillRect(mx - ww / 2 + Math.sin(tm + i) * 3, y, ww, 2);
+  }
+  const sand = ctx.createLinearGradient(0, h * .74, 0, h);
+  sand.addColorStop(0, '#3A2F5E'); sand.addColorStop(1, '#1A1430');
+  ctx.fillStyle = sand; ctx.beginPath(); ctx.moveTo(0, h * .76); ctx.quadraticCurveTo(w * .5, h * .72, w, h * .77); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
+  ctx.fillStyle = '#0B0820';
+  [[.18, 1], [.32, .92]].forEach(([px, s]) => {
+    const x = w * px, y = h * .8, u = w * .05 * s;
+    circle(ctx, x, y, u); ctx.beginPath(); ctx.ellipse(x, y + u * 2.3, u * 1.5, u * 1.6, 0, 0, 6.28); ctx.fill();
+    ctx.fillRect(x - u * .3, y + u * 3.4, u * 2.8, u * .9);
+  });
+}
+function paintSelfie(ctx, w, h, p) {
+  const g = ctx.createLinearGradient(0, 0, w, h); g.addColorStop(0, p.bg[0]); g.addColorStop(1, p.bg[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  const cx = w * .5, cy = h * .45, hr = w * .2;
+  ctx.fillStyle = p.shirt; ctx.beginPath(); ctx.ellipse(cx, h * 1.02, w * .46, h * .28, 0, 0, 6.28); ctx.fill();
+  ctx.fillStyle = p.hair; ctx.beginPath();
+  if (p.long) ctx.ellipse(cx, cy + hr * .35, hr * 1.18, hr * 1.6, 0, 0, 6.28); else ctx.ellipse(cx, cy - hr * .12, hr * 1.02, hr * 1.08, 0, 0, 6.28);
+  ctx.fill();
+  ctx.fillStyle = p.skin; ctx.fillRect(cx - hr * .36, cy + hr * .6, hr * .72, hr * 1.1);
+  ctx.beginPath(); ctx.ellipse(cx, cy + hr * .08, hr * .88, hr * 1.06, 0, 0, 6.28); ctx.fill();
+  ctx.fillStyle = p.hair; ctx.beginPath(); ctx.ellipse(cx, cy - hr * .52, hr * .94, hr * .55, 0, Math.PI, Math.PI * 2); ctx.fill();
+  if (p.glasses) {
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.ellipse(cx - hr * .38, cy + hr * .02, hr * .3, hr * .21, 0, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + hr * .38, cy + hr * .02, hr * .3, hr * .21, 0, 0, 6.28); ctx.fill();
+    ctx.fillRect(cx - hr * .1, cy - hr * .04, hr * .2, hr * .06);
+  } else {
+    ctx.fillStyle = '#2A1A12'; circle(ctx, cx - hr * .34, cy + hr * .02, hr * .08); circle(ctx, cx + hr * .34, cy + hr * .02, hr * .08);
+  }
+  ctx.fillStyle = 'rgba(255,90,120,.28)'; circle(ctx, cx - hr * .55, cy + hr * .35, hr * .15); circle(ctx, cx + hr * .55, cy + hr * .35, hr * .15);
+  ctx.strokeStyle = '#7A2E2E'; ctx.lineWidth = hr * .08; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx, cy + hr * .36, hr * .3, Math.PI * .18, Math.PI * .82); ctx.stroke();
+}
+function shot(fn, w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); return c.toDataURL('image/jpeg', .86); }
+
+const FRIEND_TODAY = [
+  { who: 'lucia', kind: 'stage', seed: 11, place: 'Escenario Sol', off: 0, cap: 'Front row. Not moving until 02:00.', rx: { '🔥': 4, '😍': 2 } },
+  { who: 'nerea', kind: 'tent', seed: 23, place: 'Carpa Levante', off: 1, cap: 'DJ Salitre is playing all the old ones', rx: { '🙌': 3, '🔥': 1 } },
+  { who: 'marc', kind: 'food', seed: 5, place: 'Paella Corner', off: 1, cap: 'Priorities.', rx: { '😂': 5 } },
+];
+const FRIEND_YDAY = [
+  { who: 'javi', kind: 'beach', seed: 8, place: 'Zona Chill', off: 0, cap: 'Five-minute break on the sand', rx: { '😍': 3 } },
+  { who: 'marc', kind: 'stage', seed: 44, place: 'Escenario Sol', off: 4, late: 2, cap: 'Los Invisibles!!!', rx: { '🔥': 6, '🙌': 2 } },
+];
+let imgsReady = false;
+function ensureImgs() {
+  if (imgsReady) return; imgsReady = true;
+  [...FRIEND_TODAY, ...FRIEND_YDAY].forEach(p => {
+    p.back = shot((c, w, h) => paintScene(c, w, h, p.kind, p.seed * .7, p.seed), 360, 480);
+    p.front = shot((c, w, h) => paintSelfie(c, w, h, PEOPLE[p.who]), 150, 200);
+    p.mine = null;
+  });
+}
+function postHTML(p, key) {
+  const who = p.who === 'me' ? PEOPLE.me : PEOPLE[p.who], nm = nameOf(p.who);
+  const status = p.late > 0 ? `<span class="late">${t('late.n', { n: p.late })}</span>` : `<span class="ontime">${t('ontime')}</span>`;
+  const meta = [p.place ? esc(p.place) : '', p.atText].filter(Boolean).join(' · ');
+  return `<article class="post" data-key="${key}">
+    <header><span class="av sm" style="--c:${who.c}">${who.ini}</span><div><b>${esc(nm)}</b><small>${meta}</small></div>${status}</header>
+    <div class="dual" data-lock="${esc(t('lock'))}"><img class="b" src="${p.back}" alt="${esc(t('alt.back', { n: nm }))}">${p.front ? `<img class="f" src="${p.front}" alt="${esc(t('alt.front', { n: nm }))}" title="${esc(t('swap'))}">` : ''}</div>
+    ${p.cap ? `<p class="cap">${esc(p.cap)}</p>` : ''}
+    <div class="rx">${['🔥', '😍', '🙌', '😂'].map(e => `<button data-rx="${e}" class="${p.mine === e ? 'mine' : ''}">${e} ${((p.rx || {})[e] || 0) + (p.mine === e ? 1 : 0) || ''}</button>`).join('')}</div>
+  </article>`;
+}
+const keyFor = { today: [], yday: [] };
+function renderBanner() {
+  const el = $('#mBanner'), m = momState();
+  if (!m.active) {
+    el.innerHTML = `<div class="mbanner idle"><span class="k">${t('m.today')}</span><p>${t('m.idle')}</p><p style="color:var(--a-dim)">${t('m.idle.keep')}</p></div>`;
+  } else if (!m.posted) {
+    el.innerHTML = `<div class="mbanner"><span class="k">${m.left > 0 ? t('m.live') : t('m.up')}</span><div class="big">${m.left > 0 ? mmss(m.left) : '+' + mmss(m.left)}</div><p>${m.left > 0 ? t('m.p1') : t('m.p2')}</p><div class="acts" style="margin-top:0"><button class="btn dark" data-m="cam">${svgI('camera')}${t('m.open')}</button></div></div>`;
+  } else {
+    const late = lateMin(m.posted.at, m.drop);
+    el.innerHTML = `<div class="mbanner done"><span class="k">${t('m.posted', { x: fmtClock(new Date(m.posted.at)) })}</span><p><b>${late > 0 ? t('m.late', { n: late }) : t('m.ontime')}</b> ${t('m.next')}</p></div>`;
+  }
+}
+const lateMin = (at, drop) => at - drop > 120000 ? Math.ceil((at - drop - 120000) / 60000) : 0;
+const dateLabel = d => new Intl.DateTimeFormat(S.lang === 'es' ? 'es-ES' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+function renderMomento() {
+  ensureImgs(); renderBanner();
+  const m = momState(), locked = m.active && !m.posted;
+  const yd = new Date(); yd.setDate(yd.getDate() - 1);
+  const ykey = dayKey(yd), ydrop = dropFor(ykey), mineY = POSTS[ykey];
+  let h = '';
+  if (m.active) {
+    const list = [];
+    if (m.posted) list.push(['mine', { who: 'me', back: m.posted.back, front: m.posted.front, cap: m.posted.cap, place: m.posted.place, atText: fmtClock(new Date(m.posted.at)), late: lateMin(m.posted.at, m.drop), rx: {}, mine: m.posted.mine || null }]);
+    FRIEND_TODAY.forEach((p, i) => { p.atText = fmtClock(new Date(m.drop + p.off * 60000)); p.late = 0; list.push(['t' + i, p]); });
+    keyFor.today = list;
+    h += `<div class="fh"><span>${t('m.today')} · ${dateLabel(new Date())}</span><span>${t('m.posts', { n: list.length })}</span></div>`;
+    h += `<div class="${locked ? 'lockd' : ''}" style="display:grid;gap:18px">${list.map(([k, p]) => postHTML(p, k)).join('')}</div>`;
+  }
+  const ylist = [];
+  if (mineY) ylist.push(['ymine', { who: 'me', back: mineY.back, front: mineY.front, cap: mineY.cap, place: mineY.place, atText: fmtClock(new Date(mineY.at)), late: lateMin(mineY.at, ydrop), rx: {}, mine: null }]);
+  FRIEND_YDAY.forEach((p, i) => { p.atText = fmtClock(new Date(ydrop + p.off * 60000)); p.late = p.late || 0; ylist.push(['y' + i, p]); });
+  keyFor.yday = ylist;
+  h += `<div class="fh"><span>${t('m.yday')} · ${dateLabel(yd)}</span><span>${t('m.posts', { n: ylist.length })}</span></div><div style="display:grid;gap:18px">${ylist.map(([k, p]) => postHTML(p, k)).join('')}</div>`;
+  $('#feed').innerHTML = h;
+}
+function postByKey(k) { const e = [...keyFor.today, ...keyFor.yday].find(([kk]) => kk === k); return e && e[1]; }
+$('#feed').addEventListener('click', e => {
+  const art = e.target.closest('.post'); if (!art) return;
+  const p = postByKey(art.dataset.key); if (!p) return;
+  if (e.target.classList.contains('f')) { [p.back, p.front] = [p.front, p.back]; const b = art.querySelector('.b'), f = art.querySelector('.f'); [b.src, f.src] = [p.back, p.front]; return; }
+  const rx = e.target.closest('[data-rx]');
+  if (rx) { p.mine = p.mine === rx.dataset.rx ? null : rx.dataset.rx; art.outerHTML = postHTML(p, art.dataset.key); }
+});
+$('#mBanner').addEventListener('click', e => { if (e.target.closest('[data-m="cam"]')) openCam(); });
+
+/* ---------- camera (real device camera) ---------- */
+const cam = { stream: null, facing: 'environment', step: 'back', back: null, front: null, busy: false, native: 'back' };
+const video = $('#camVideo');
+const hasMedia = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && window.isSecureContext !== false;
+function stopStream() { if (cam.stream) { cam.stream.getTracks().forEach(tr => tr.stop()); cam.stream = null; } video.srcObject = null; }
+function camError(name) {
+  const msg = name === 'embed' ? (cam.step === 'back' ? t('cam.embed') : t('cam.selfieNative'))
+    : name === 'NotAllowedError' || name === 'SecurityError' ? t('cam.denied')
+    : name === 'NotFoundError' || name === 'OverconstrainedError' ? t('cam.none')
+    : name === 'NotReadableError' || name === 'AbortError' ? t('cam.busy') : t('cam.unsup');
+  $('#camErrMsg').textContent = msg;
+  cam.native = cam.step;
+  const inp = $('#fileNative');
+  inp.setAttribute('capture', cam.step === 'back' ? 'environment' : 'user');
+  $('#nativeLbl').textContent = cam.step === 'back' ? t('cam.native') : t('cam.nativeSelfie');
+  $('#camRetry').hidden = EMBED || !hasMedia();
+  $('#camErr').hidden = false; $('#shutter').disabled = true; $('#camMsg').hidden = true;
+}
+async function startStream(facing) {
+  stopStream();
+  $('#camErr').hidden = true; $('#camMsg').hidden = false;
+  if (EMBED) { camError('embed'); return false; }
+  if (!hasMedia()) { camError('unsupported'); return false; }
+  try {
+    cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1440 }, height: { ideal: 1920 } }, audio: false });
+    video.srcObject = cam.stream;
+    video.classList.toggle('mirror', facing === 'user');
+    await video.play().catch(() => {});
+    if (!video.videoWidth) await new Promise(r => { video.onloadedmetadata = () => r(); setTimeout(r, 1500); });
+    $('#shutter').disabled = false;
+    return true;
+  } catch (err) { camError(err && err.name); return false; }
+}
+function grabFrame(mirror, w, h) {
+  const vw = video.videoWidth, vh = video.videoHeight; if (!vw || !vh) return null;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'), s = Math.max(w / vw, h / vh), iw = vw * s, ih = vh * s;
+  if (mirror) { x.translate(w, 0); x.scale(-1, 1); }
+  x.drawImage(video, (w - iw) / 2, (h - ih) / 2, iw, ih);
+  return c.toDataURL('image/jpeg', .82);
+}
+function fileToDataURL(file, w, h) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'), s = Math.max(w / im.width, h / im.height), iw = im.width * s, ih = im.height * s;
+      x.drawImage(im, (w - iw) / 2, (h - ih) / 2, iw, ih); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .82));
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); };
+    im.src = url;
+  });
+}
+function buzz(p) { try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(p); } catch (_) {} }
+function flash() { const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); buzz(30); }
+function updateCamTimer() {
+  const el = $('#camTimer'), left = momState().left;
+  el.textContent = left > 0 ? mmss(left) : '+' + mmss(left);
+  el.classList.toggle('late', left <= 0);
+}
+function setStep(step) {
+  cam.step = step;
+  $('#camStep').textContent = step === 'back' ? '1/2' : '2/2';
+  $('#camMsg').textContent = step === 'back' ? t('cam.point') : t('cam.front');
+  $('#camThumb').hidden = step === 'back' || !cam.back;
+  if (cam.back) $('#camThumb').src = cam.back;
+}
+async function openCam() {
+  const m = momState();
+  if (m.posted) { toast(t('t.already')); return; }
+  if (!m.active) { toast(t('t.notyet')); return; }
+  cam.back = cam.front = null; cam.busy = false;
+  $('#cam').hidden = false; $('#camShoot').style.display = 'flex'; $('#review').hidden = true;
+  $('#count3').hidden = true;
+  setStep('back');
+  $('#camMsg').textContent = t('cam.starting'); $('#shutter').disabled = true;
+  updateCamTimer();
+  if (await startStream(cam.facing)) $('#camMsg').textContent = t('cam.point');
+}
+function closeCam() { stopStream(); $('#cam').hidden = true; cam.busy = false; }
+async function takeSelfie() {
+  const other = cam.facing === 'user' ? 'environment' : 'user';
+  setStep('front');
+  if (!(await startStream(other))) return;
+  $('#shutter').disabled = true;
+  const c3 = $('#count3'); c3.hidden = false;
+  for (const n of [3, 2, 1]) { c3.textContent = n; await wait(650); }
+  c3.hidden = true;
+  const img = grabFrame(other === 'user', 360, 480);
+  flash(); stopStream();
+  cam.front = img; showReview();
+}
+function showReview() {
+  cam.busy = false;
+  $('#rvBack').src = cam.back; $('#rvBack').alt = t('rv.back');
+  const f = $('#rvFront');
+  if (cam.front) { f.hidden = false; f.src = cam.front; f.alt = t('rv.front'); } else f.hidden = true;
+  $('#rvWhereRow').hidden = !ME.onsite;
+  if (ME.onsite) $('#rvWhere').textContent = t('near', { x: nearestPlace(ME).name });
+  $('#camShoot').style.display = 'none'; $('#review').hidden = false;
+}
+$('#camClose').addEventListener('click', closeCam);
+$('#camFlip').addEventListener('click', async () => {
+  if (cam.step !== 'back' || cam.busy) return;
+  cam.facing = cam.facing === 'environment' ? 'user' : 'environment';
+  $('#shutter').disabled = true; await startStream(cam.facing);
+});
+$('#shutter').addEventListener('click', async () => {
+  if (cam.busy || cam.step !== 'back') return;
+  const img = grabFrame(cam.facing === 'user', 720, 960); if (!img) return;
+  cam.busy = true; flash(); cam.back = img;
+  await wait(250);
+  await takeSelfie();
+});
+$('#camRetry').addEventListener('click', async () => {
+  const ok = await startStream(cam.step === 'back' ? cam.facing : (cam.facing === 'user' ? 'environment' : 'user'));
+  if (ok && cam.step === 'front') { cam.busy = true; await takeSelfie(); }
+});
+$('#fileGallery').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { cam.back = await fileToDataURL(f, 720, 960); cam.busy = true; flash(); await takeSelfie(); } catch (_) {}
+});
+$('#fileNative').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    if (cam.native === 'back') {
+      cam.back = await fileToDataURL(f, 720, 960);
+      setStep('front'); camError(EMBED ? 'embed' : 'unsupported');
+      $('#camErrMsg').textContent = t('cam.selfieNative');
+    } else {
+      cam.front = await fileToDataURL(f, 360, 480); showReview();
+    }
+  } catch (_) {}
+});
+$('#rvFront').addEventListener('click', () => { if (!cam.front) return; [cam.back, cam.front] = [cam.front, cam.back]; $('#rvBack').src = cam.back; $('#rvFront').src = cam.front; });
+$('#rvRetake').addEventListener('click', openCam);
+$('#rvPost').addEventListener('click', () => {
+  const m = momState();
+  const post = { back: cam.back, front: cam.front, at: Date.now(), cap: $('#rvCap').value.trim(), place: ME.onsite ? nearestPlace(ME).name : '' };
+  POSTS[m.key] = post;
+  /* keep the last 7 days only */
+  const keep = new Set(Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return dayKey(d); }));
+  Object.keys(POSTS).forEach(k => { if (!keep.has(k)) delete POSTS[k]; });
+  const ok = store.set('posts', POSTS);
+  $('#rvCap').value = '';
+  closeCam(); go('momento');
+  toast(ok ? t('t.posted') : t('t.storefail'));
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden && cam.stream) { stopStream(); if (!$('#cam').hidden && cam.step === 'back') $('#shutter').disabled = true; } else if (!document.hidden && !$('#cam').hidden && !cam.stream && $('#review').hidden && cam.step === 'back') startStream(cam.facing); });
+
+/* =========================================================
+   live ticks
+   ========================================================= */
+let wasActive = momState().active;
+function tick() {
+  const m = momState();
+  if (m.active && !wasActive && !m.posted) {
+    if (S.momAlerts) { showBanner(); systemNotify('FestiGo · Momento', t('notif.s')); buzz([120, 60, 120]); }
+    if (view !== 'momento') $('#mDot').hidden = false;
+    if (view === 'momento') renderMomento();
+    if (view === 'home') renderHome();
+  }
+  wasActive = m.active;
+  if (!$('#cam').hidden) updateCamTimer();
+  if (view === 'momento' && m.active && !m.posted) renderBanner();
+  if (view === 'home') tickHome();
+}
+setInterval(tick, 1000);
+setInterval(() => {
+  if (festNow()) {
+    PLACES.forEach(p => { if (p.wait != null) p.wait = clamp(p.wait + Math.round((Math.random() - .5) * 2.4), 0, 15); });
+    renderPins();
+    if (sheet.classList.contains('open') && sel && !(sel in PEOPLE)) openPlace(sel);
+  }
+  checkReminders();
+  if (view === 'lineup' && luMode === 'grid' && festNow()) renderLineup();
+  if (view === 'home') renderHome();
+}, 30000);
+
+/* ---------- boot ---------- */
+applyStatic(); setHeader();
+$('#zoneFood').textContent = t('zone.food');
+renderChips(); renderPins(); renderPeople(); renderLegend(); applyVB();
+go('home');
+{ const m = momState(); if (m.active && !m.posted) { $('#mDot').hidden = false; if (m.left > 0 && S.momAlerts) setTimeout(showBanner, 800); } }
+if (!store.get('welcomed', false)) showWelcome();
+if (new URLSearchParams(location.search).has('join')) setTimeout(() => go('friends'), 0);
+
+/* offline support + install */
+if (EMBED) { $('#zme').hidden = true; $('#zoff').hidden = true; $('#camFlip').style.visibility = 'hidden'; }
+if (!EMBED && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+})();
+</script>
+</body>
+</html>
